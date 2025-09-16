@@ -15,7 +15,7 @@
 •	Runtime : Node.js
 •	Framework : Express.js
 •	Temps réel : Socket.IO
-•	ORM : Prisma ou Supabase
+•	ORM : Prisma
 •	Base de données : PostgreSQL
 •	Cache : Redis
 •	Authentification : JWT avec refresh tokens
