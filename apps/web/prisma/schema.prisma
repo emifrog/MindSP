@@ -1,0 +1,408 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema", "fullTextSearch", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "tenant"]
+}
+
+// ==========================================
+// MODELS PUBLICS (Multi-tenancy)
+// ==========================================
+
+model Tenant {
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  subdomain         String    @unique
+  customDomain      String?   @unique
+  
+  // Configuration
+  settings          Json      @default("{}")
+  features          String[]  @default([])
+  maxUsers          Int       @default(10)
+  maxStorage        Int       @default(1000) // MB
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+  
+  // Relations
+  users             User[]
+  subscriptions     Subscription[]
+  
+  @@map("tenants")
+  @@schema("public")
+}
+
+model Subscription {
+  id                String    @id @default(cuid())
+  tenantId          String
+  plan              Plan
+  status            SubscriptionStatus
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean   @default(false)
+  
+  // Relations
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@map("subscriptions")
+  @@schema("public")
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  
+  @@schema("public")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  
+  @@schema("public")
+}
+
+// ==========================================
+// MODELS TENANT (Isolation par tenant)
+// ==========================================
+
+model User {
+  id                String    @id @default(cuid())
+  tenantId          String
+  
+  // Auth
+  email             String    
+  password          String
+  emailVerified     DateTime?
+  
+  // Profile
+  firstName         String
+  lastName          String
+  phone             String?
+  avatar            String?
+  
+  // Role & Permissions
+  role              UserRole  @default(USER)
+  permissions       String[]  @default([])
+  
+  // Metadata
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+  
+  // Relations
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
+  sessions          Session[]
+  fmpas             FMPA[]    @relation("FMPAOrganizer")
+  participations    FMPAParticipation[]
+  messages          Message[]
+  notifications     Notification[]
+  
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+  @@schema("tenant")
+}
+
+model Session {
+  id                String    @id @default(cuid())
+  userId            String
+  token             String    @unique
+  refreshToken      String    @unique
+  expiresAt         DateTime
+  ipAddress         String?
+  userAgent         String?
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([userId])
+  @@map("sessions")
+  @@schema("tenant")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  USER
+  
+  @@schema("tenant")
+}
+
+// ==========================================
+// MODULE FMPA
+// ==========================================
+
+model FMPA {
+  id                String    @id @default(cuid())
+  tenantId          String
+  
+  // Informations générales
+  title             String
+  description       String?
+  type              FMPAType
+  status            FMPAStatus @default(DRAFT)
+  
+  // Dates et lieu
+  startDate         DateTime
+  endDate           DateTime
+  location          String
+  address           String?
+  
+  // Configuration
+  maxParticipants   Int?
+  requiresValidation Boolean  @default(false)
+  allowExternal     Boolean   @default(false)
+  
+  // QR Code
+  qrCode            String?   @unique
+  
+  // Metadata
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  canceledAt        DateTime?
+  
+  // Relations
+  organizer         User      @relation("FMPAOrganizer", fields: [createdBy], references: [id])
+  participants      FMPAParticipation[]
+  
+  @@index([tenantId])
+  @@index([startDate])
+  @@index([status])
+  @@map("fmpas")
+  @@schema("tenant")
+}
+
+model FMPAParticipation {
+  id                String    @id @default(cuid())
+  fmpaId            String
+  userId            String
+  
+  // Status
+  status            ParticipationStatus @default(PENDING)
+  validatedBy       String?
+  validatedAt       DateTime?
+  
+  // Présence
+  checkedInAt       DateTime?
+  checkedOutAt      DateTime?
+  signature         String?
+  
+  // Metadata
+  registeredAt      DateTime  @default(now())
+  canceledAt        DateTime?
+  
+  // Relations
+  fmpa              FMPA      @relation(fields: [fmpaId], references: [id])
+  user              User      @relation(fields: [userId], references: [id])
+  
+  @@unique([fmpaId, userId])
+  @@map("fmpa_participations")
+  @@schema("tenant")
+}
+
+enum FMPAType {
+  FORMATION
+  MANOEUVRE
+  REUNION
+  GARDE
+  INTERVENTION
+  CEREMONIE
+  SPORT
+  AUTRE
+  
+  @@schema("tenant")
+}
+
+enum FMPAStatus {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  
+  @@schema("tenant")
+}
+
+enum ParticipationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PRESENT
+  ABSENT
+  EXCUSED
+  
+  @@schema("tenant")
+}
+
+// ==========================================
+// MODULE MESSAGERIE
+// ==========================================
+
+model Conversation {
+  id                String    @id @default(cuid())
+  tenantId          String
+  type              ConversationType
+  name              String?
+  avatar            String?
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastMessageAt     DateTime?
+  
+  // Relations
+  messages          Message[]
+  members           ConversationMember[]
+  
+  @@index([tenantId])
+  @@map("conversations")
+  @@schema("tenant")
+}
+
+model ConversationMember {
+  id                String    @id @default(cuid())
+  conversationId    String
+  userId            String
+  role              MemberRole @default(MEMBER)
+  
+  // Notifications
+  mutedUntil        DateTime?
+  lastReadAt        DateTime?
+  
+  // Metadata
+  joinedAt          DateTime  @default(now())
+  leftAt            DateTime?
+  
+  // Relations
+  conversation      Conversation @relation(fields: [conversationId], references: [id])
+  
+  @@unique([conversationId, userId])
+  @@map("conversation_members")
+  @@schema("tenant")
+}
+
+model Message {
+  id                String    @id @default(cuid())
+  conversationId    String
+  senderId          String
+  
+  // Content
+  content           String
+  type              MessageType @default(TEXT)
+  attachments       Json?
+  
+  // Status
+  editedAt          DateTime?
+  deletedAt         DateTime?
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  conversation      Conversation @relation(fields: [conversationId], references: [id])
+  sender            User      @relation(fields: [senderId], references: [id])
+  readBy            MessageRead[]
+  
+  @@index([conversationId, createdAt])
+  @@map("messages")
+  @@schema("tenant")
+}
+
+model MessageRead {
+  id                String    @id @default(cuid())
+  messageId         String
+  userId            String
+  readAt            DateTime  @default(now())
+  
+  // Relations
+  message           Message   @relation(fields: [messageId], references: [id])
+  
+  @@unique([messageId, userId])
+  @@map("message_reads")
+  @@schema("tenant")
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  CHANNEL
+  
+  @@schema("tenant")
+}
+
+enum MemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+  
+  @@schema("tenant")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+  
+  @@schema("tenant")
+}
+
+// ==========================================
+// MODULE NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id                String    @id @default(cuid())
+  userId            String
+  
+  // Content
+  type              NotificationType
+  title             String
+  message           String
+  data              Json?
+  actionUrl         String?
+  
+  // Status
+  readAt            DateTime?
+  clickedAt         DateTime?
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id])
+  
+  @@index([userId, readAt])
+  @@map("notifications")
+  @@schema("tenant")
+}
+
+enum NotificationType {
+  FMPA_INVITATION
+  FMPA_REMINDER
+  FMPA_CANCELED
+  MESSAGE_RECEIVED
+  SYSTEM_UPDATE
+  
+  @@schema("tenant")
+}
