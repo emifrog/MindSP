@@ -1,0 +1,56 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "lib": ["ES2022", "DOM", "DOM.Iterable"],
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "resolveJsonModule": true,
+      "allowJs": true,
+      "checkJs": false,
+      "jsx": "preserve",
+      
+      // Type Checking
+      "strict": true,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "strictFunctionTypes": true,
+      "strictPropertyInitialization": true,
+      "noImplicitThis": true,
+      "alwaysStrict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noFallthroughCasesInSwitch": true,
+      "noUncheckedIndexedAccess": true,
+      
+      // Module
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "forceConsistentCasingInFileNames": true,
+      "isolatedModules": true,
+      
+      // Emit
+      "declaration": true,
+      "declarationMap": true,
+      "sourceMap": true,
+      "removeComments": false,
+      "noEmit": true,
+      
+      // Skip type checking for node_modules
+      "skipLibCheck": true,
+      
+      // Experimental
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      
+      // Path mapping
+      "baseUrl": ".",
+      "paths": {
+        "@mindsp/ui": ["packages/ui/src"],
+        "@mindsp/utils": ["packages/utils/src"],
+        "@mindsp/types": ["packages/types/src"],
+        "@mindsp/constants": ["packages/constants/src"]
+      }
+    },
+    "exclude": ["node_modules", "dist", "build", ".next", ".turbo"],
+    "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+  }
