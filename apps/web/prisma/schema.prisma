@@ -1,12 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["multiSchema", "fullTextSearch", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-  schemas  = ["public", "tenant"]
 }
 
 // ==========================================
@@ -21,8 +19,8 @@ model Tenant {
   customDomain      String?   @unique
   
   // Configuration
-  settings          Json      @default("{}")
-  features          String[]  @default([])
+  settings          String    @default("{}")
+  features          String    @default("")
   maxUsers          Int       @default(10)
   maxStorage        Int       @default(1000) // MB
   
@@ -36,14 +34,13 @@ model Tenant {
   subscriptions     Subscription[]
   
   @@map("tenants")
-  @@schema("public")
 }
 
 model Subscription {
   id                String    @id @default(cuid())
   tenantId          String
-  plan              Plan
-  status            SubscriptionStatus
+  plan              String
+  status            String
   currentPeriodEnd  DateTime
   cancelAtPeriodEnd Boolean   @default(false)
   
@@ -54,25 +51,6 @@ model Subscription {
   updatedAt         DateTime  @updatedAt
   
   @@map("subscriptions")
-  @@schema("public")
-}
-
-enum Plan {
-  FREE
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
-  
-  @@schema("public")
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  UNPAID
-  
-  @@schema("public")
 }
 
 // ==========================================
@@ -95,8 +73,8 @@ model User {
   avatar            String?
   
   // Role & Permissions
-  role              UserRole  @default(USER)
-  permissions       String[]  @default([])
+  role              String    @default("USER")
+  permissions       String    @default("")
   
   // Metadata
   lastLoginAt       DateTime?
@@ -115,7 +93,6 @@ model User {
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("users")
-  @@schema("tenant")
 }
 
 model Session {
@@ -135,17 +112,8 @@ model Session {
   
   @@index([userId])
   @@map("sessions")
-  @@schema("tenant")
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  MANAGER
-  USER
-  
-  @@schema("tenant")
-}
 
 // ==========================================
 // MODULE FMPA
@@ -158,8 +126,8 @@ model FMPA {
   // Informations générales
   title             String
   description       String?
-  type              FMPAType
-  status            FMPAStatus @default(DRAFT)
+  type              String
+  status            String    @default("DRAFT")
   
   // Dates et lieu
   startDate         DateTime
@@ -189,7 +157,6 @@ model FMPA {
   @@index([startDate])
   @@index([status])
   @@map("fmpas")
-  @@schema("tenant")
 }
 
 model FMPAParticipation {
@@ -198,7 +165,7 @@ model FMPAParticipation {
   userId            String
   
   // Status
-  status            ParticipationStatus @default(PENDING)
+  status            String    @default("PENDING")
   validatedBy       String?
   validatedAt       DateTime?
   
@@ -217,42 +184,8 @@ model FMPAParticipation {
   
   @@unique([fmpaId, userId])
   @@map("fmpa_participations")
-  @@schema("tenant")
 }
 
-enum FMPAType {
-  FORMATION
-  MANOEUVRE
-  REUNION
-  GARDE
-  INTERVENTION
-  CEREMONIE
-  SPORT
-  AUTRE
-  
-  @@schema("tenant")
-}
-
-enum FMPAStatus {
-  DRAFT
-  PUBLISHED
-  IN_PROGRESS
-  COMPLETED
-  CANCELED
-  
-  @@schema("tenant")
-}
-
-enum ParticipationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PRESENT
-  ABSENT
-  EXCUSED
-  
-  @@schema("tenant")
-}
 
 // ==========================================
 // MODULE MESSAGERIE
@@ -261,7 +194,7 @@ enum ParticipationStatus {
 model Conversation {
   id                String    @id @default(cuid())
   tenantId          String
-  type              ConversationType
+  type              String
   name              String?
   avatar            String?
   
@@ -276,14 +209,13 @@ model Conversation {
   
   @@index([tenantId])
   @@map("conversations")
-  @@schema("tenant")
 }
 
 model ConversationMember {
   id                String    @id @default(cuid())
   conversationId    String
   userId            String
-  role              MemberRole @default(MEMBER)
+  role              String    @default("MEMBER")
   
   // Notifications
   mutedUntil        DateTime?
@@ -298,7 +230,6 @@ model ConversationMember {
   
   @@unique([conversationId, userId])
   @@map("conversation_members")
-  @@schema("tenant")
 }
 
 model Message {
@@ -308,8 +239,8 @@ model Message {
   
   // Content
   content           String
-  type              MessageType @default(TEXT)
-  attachments       Json?
+  type              String    @default("TEXT")
+  attachments       String?
   
   // Status
   editedAt          DateTime?
@@ -325,7 +256,6 @@ model Message {
   
   @@index([conversationId, createdAt])
   @@map("messages")
-  @@schema("tenant")
 }
 
 model MessageRead {
@@ -339,33 +269,8 @@ model MessageRead {
   
   @@unique([messageId, userId])
   @@map("message_reads")
-  @@schema("tenant")
 }
 
-enum ConversationType {
-  DIRECT
-  GROUP
-  CHANNEL
-  
-  @@schema("tenant")
-}
-
-enum MemberRole {
-  ADMIN
-  MODERATOR
-  MEMBER
-  
-  @@schema("tenant")
-}
-
-enum MessageType {
-  TEXT
-  IMAGE
-  FILE
-  SYSTEM
-  
-  @@schema("tenant")
-}
 
 // ==========================================
 // MODULE NOTIFICATIONS
@@ -376,10 +281,10 @@ model Notification {
   userId            String
   
   // Content
-  type              NotificationType
+  type              String
   title             String
   message           String
-  data              Json?
+  data              String?
   actionUrl         String?
   
   // Status
@@ -394,15 +299,5 @@ model Notification {
   
   @@index([userId, readAt])
   @@map("notifications")
-  @@schema("tenant")
 }
 
-enum NotificationType {
-  FMPA_INVITATION
-  FMPA_REMINDER
-  FMPA_CANCELED
-  MESSAGE_RECEIVED
-  SYSTEM_UPDATE
-  
-  @@schema("tenant")
-}

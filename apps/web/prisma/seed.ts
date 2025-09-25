@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, FMPAType, FMPAStatus, ParticipationStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { addDays, addHours, subDays } from 'date-fns';
 
@@ -57,15 +57,15 @@ async function createTenants() {
         name: 'SDIS 77 - Seine-et-Marne',
         slug: 'sdis77',
         subdomain: 'sdis77',
-        features: ['FMPA', 'MESSAGING', 'AGENDA', 'FORMATIONS'],
+        features: 'FMPA,MESSAGING,AGENDA,FORMATIONS',
         maxUsers: 500,
         maxStorage: 10000,
-        settings: {
+        settings: JSON.stringify({
           primaryColor: '#DC143C',
           logo: '/logos/sdis77.png',
           timezone: 'Europe/Paris',
           emailDomain: 'sdis77.fr',
-        },
+        }),
       },
     }),
     prisma.tenant.create({
@@ -73,15 +73,15 @@ async function createTenants() {
         name: 'SDIS 91 - Essonne',
         slug: 'sdis91',
         subdomain: 'sdis91',
-        features: ['FMPA', 'MESSAGING', 'AGENDA'],
+        features: 'FMPA,MESSAGING,AGENDA',
         maxUsers: 300,
         maxStorage: 5000,
-        settings: {
+        settings: JSON.stringify({
           primaryColor: '#FF4500',
           logo: '/logos/sdis91.png',
           timezone: 'Europe/Paris',
           emailDomain: 'sdis91.fr',
-        },
+        }),
       },
     }),
   ]);
@@ -118,48 +118,48 @@ async function createUsers(tenants: any[]) {
       email: 'admin@sdis77.fr',
       firstName: 'Jean',
       lastName: 'Dupont',
-      role: UserRole.ADMIN,
-      permissions: ['*'],
+      role: 'ADMIN',
+      permissions: '*',
       phone: '0160123456',
     },
     {
       email: 'chef@sdis77.fr',
       firstName: 'Marie',
       lastName: 'Martin',
-      role: UserRole.MANAGER,
-      permissions: ['VIEW_DASHBOARD', 'MANAGE_FMPA', 'MANAGE_PERSONNEL'],
+      role: 'MANAGER',
+      permissions: 'VIEW_DASHBOARD,MANAGE_FMPA,MANAGE_PERSONNEL',
       phone: '0160123457',
     },
     {
       email: 'pompier1@sdis77.fr',
       firstName: 'Pierre',
       lastName: 'Bernard',
-      role: UserRole.USER,
-      permissions: ['VIEW_DASHBOARD', 'VIEW_FMPA', 'VIEW_MESSAGES'],
+      role: 'USER',
+      permissions: 'VIEW_DASHBOARD,VIEW_FMPA,VIEW_MESSAGES',
       phone: '0160123458',
     },
     {
       email: 'pompier2@sdis77.fr',
       firstName: 'Sophie',
       lastName: 'Dubois',
-      role: UserRole.USER,
-      permissions: ['VIEW_DASHBOARD', 'VIEW_FMPA', 'VIEW_MESSAGES'],
+      role: 'USER',
+      permissions: 'VIEW_DASHBOARD,VIEW_FMPA,VIEW_MESSAGES',
       phone: '0160123459',
     },
     {
       email: 'pompier3@sdis77.fr',
       firstName: 'Lucas',
       lastName: 'Moreau',
-      role: UserRole.USER,
-      permissions: ['VIEW_DASHBOARD', 'VIEW_FMPA', 'VIEW_MESSAGES'],
+      role: 'USER',
+      permissions: 'VIEW_DASHBOARD,VIEW_FMPA,VIEW_MESSAGES',
       phone: '0160123460',
     },
     {
       email: 'formateur@sdis77.fr',
       firstName: 'Thomas',
       lastName: 'Petit',
-      role: UserRole.MANAGER,
-      permissions: ['VIEW_DASHBOARD', 'MANAGE_FMPA', 'MANAGE_FORMATIONS'],
+      role: 'MANAGER',
+      permissions: 'VIEW_DASHBOARD,MANAGE_FMPA,MANAGE_FORMATIONS',
       phone: '0160123461',
     },
   ];
@@ -183,16 +183,16 @@ async function createUsers(tenants: any[]) {
       email: 'admin@sdis91.fr',
       firstName: 'Paul',
       lastName: 'Durand',
-      role: UserRole.ADMIN,
-      permissions: ['*'],
+      role: 'ADMIN',
+      permissions: '*',
       phone: '0169123456',
     },
     {
       email: 'pompier@sdis91.fr',
       firstName: 'Julie',
       lastName: 'Rousseau',
-      role: UserRole.USER,
-      permissions: ['VIEW_DASHBOARD', 'VIEW_FMPA', 'VIEW_MESSAGES'],
+      role: 'USER',
+      permissions: 'VIEW_DASHBOARD,VIEW_FMPA,VIEW_MESSAGES',
       phone: '0169123457',
     },
   ];
@@ -216,8 +216,8 @@ async function createUsers(tenants: any[]) {
 async function createFMPAs(tenant: any, users: any[]) {
   console.log('📅 Création des FMPA...');
 
-  const admin = users.find(u => u.role === UserRole.ADMIN);
-  const manager = users.find(u => u.role === UserRole.MANAGER);
+  const admin = users.find(u => u.role === 'ADMIN');
+  const manager = users.find(u => u.role === 'MANAGER');
 
   const fmpas = await Promise.all([
     // FMPA passées
@@ -226,8 +226,8 @@ async function createFMPAs(tenant: any, users: any[]) {
         tenantId: tenant.id,
         title: 'Formation Incendie Niveau 1',
         description: 'Formation de base sur les techniques d\'extinction et la sécurité incendie',
-        type: FMPAType.FORMATION,
-        status: FMPAStatus.COMPLETED,
+        type: 'FORMATION',
+        status: 'COMPLETED',
         startDate: subDays(new Date(), 7),
         endDate: subDays(new Date(), 7),
         location: 'Centre de Formation Principal',
@@ -245,8 +245,8 @@ async function createFMPAs(tenant: any, users: any[]) {
         tenantId: tenant.id,
         title: 'Manœuvre mensuelle - Janvier',
         description: 'Exercice pratique avec mise en situation réelle d\'intervention',
-        type: FMPAType.MANOEUVRE,
-        status: FMPAStatus.IN_PROGRESS,
+        type: 'MANOEUVRE',
+        status: 'IN_PROGRESS',
         startDate: new Date(),
         endDate: addHours(new Date(), 4),
         location: 'Caserne Centrale',
@@ -264,8 +264,8 @@ async function createFMPAs(tenant: any, users: any[]) {
         tenantId: tenant.id,
         title: 'Formation PSE2 - Premiers Secours en Équipe',
         description: 'Formation avancée aux premiers secours en équipe niveau 2',
-        type: FMPAType.FORMATION,
-        status: FMPAStatus.PUBLISHED,
+        type: 'FORMATION',
+        status: 'PUBLISHED',
         startDate: addDays(new Date(), 3),
         endDate: addDays(new Date(), 5),
         location: 'Centre de Formation',
@@ -283,8 +283,8 @@ async function createFMPAs(tenant: any, users: any[]) {
         tenantId: tenant.id,
         title: 'Garde de nuit',
         description: 'Service de garde nocturne',
-        type: FMPAType.GARDE,
-        status: FMPAStatus.PUBLISHED,
+        type: 'GARDE',
+        status: 'PUBLISHED',
         startDate: addDays(new Date(), 1),
         endDate: addDays(new Date(), 2),
         location: 'Caserne Sud',
@@ -301,8 +301,8 @@ async function createFMPAs(tenant: any, users: any[]) {
         tenantId: tenant.id,
         title: 'Cérémonie du 14 Juillet',
         description: 'Participation au défilé et cérémonie officielle',
-        type: FMPAType.CEREMONIE,
-        status: FMPAStatus.DRAFT,
+        type: 'CEREMONIE',
+        status: 'DRAFT',
         startDate: addDays(new Date(), 200),
         endDate: addDays(new Date(), 200),
         location: 'Place de la République',
@@ -318,8 +318,8 @@ async function createFMPAs(tenant: any, users: any[]) {
         tenantId: tenant.id,
         title: 'Entraînement Sportif Hebdomadaire',
         description: 'Session d\'entraînement physique et parcours sportif',
-        type: FMPAType.SPORT,
-        status: FMPAStatus.PUBLISHED,
+        type: 'SPORT',
+        status: 'PUBLISHED',
         startDate: addDays(new Date(), 2),
         endDate: addDays(new Date(), 2),
         location: 'Gymnase Municipal',
@@ -344,7 +344,7 @@ async function createParticipations(fmpas: any[], users: any[]) {
   // Ajouter des participations pour les FMPA
   for (const fmpa of fmpas) {
     // Ne pas créer de participations pour les brouillons
-    if (fmpa.status === FMPAStatus.DRAFT) continue;
+    if (fmpa.status === 'DRAFT') continue;
 
     // Sélectionner des utilisateurs aléatoires
     const participantCount = Math.min(
@@ -357,31 +357,31 @@ async function createParticipations(fmpas: any[], users: any[]) {
       .slice(0, participantCount);
 
     for (const user of selectedUsers) {
-      let status: ParticipationStatus = ParticipationStatus.APPROVED;
+      let status = 'APPROVED';
       let checkedInAt = null;
       let checkedOutAt = null;
 
       // Pour les FMPA terminées, marquer comme présent/absent
-      if (fmpa.status === FMPAStatus.COMPLETED) {
+      if (fmpa.status === 'COMPLETED') {
         const isPresent = Math.random() > 0.2; // 80% de présence
-        status = isPresent ? ParticipationStatus.PRESENT : ParticipationStatus.ABSENT;
+        status = isPresent ? 'PRESENT' : 'ABSENT';
         if (isPresent) {
           checkedInAt = fmpa.startDate;
           checkedOutAt = fmpa.endDate;
         }
-      } else if (fmpa.status === FMPAStatus.IN_PROGRESS) {
+      } else if (fmpa.status === 'IN_PROGRESS') {
         // Pour les FMPA en cours, certains sont déjà checkés
         if (Math.random() > 0.5) {
           checkedInAt = fmpa.startDate;
-          status = ParticipationStatus.PRESENT;
+          status = 'PRESENT';
         }
       } else {
         // Pour les FMPA futures, mélange de statuts
         const rand = Math.random();
         if (rand < 0.1) {
-          status = ParticipationStatus.PENDING;
+          status = 'PENDING';
         } else if (rand < 0.15) {
-          status = ParticipationStatus.REJECTED;
+          status = 'REJECTED';
         }
       }
 
@@ -390,8 +390,8 @@ async function createParticipations(fmpas: any[], users: any[]) {
           fmpaId: fmpa.id,
           userId: user.id,
           status,
-          validatedBy: status === ParticipationStatus.APPROVED ? users[0].id : null,
-          validatedAt: status === ParticipationStatus.APPROVED ? subDays(new Date(), 1) : null,
+          validatedBy: status === 'APPROVED' ? users[0].id : null,
+          validatedAt: status === 'APPROVED' ? subDays(new Date(), 1) : null,
           checkedInAt,
           checkedOutAt,
         },
@@ -423,7 +423,7 @@ async function createConversations(tenant: any, users: any[]) {
       data: {
         conversationId: groupConversation.id,
         userId: user.id,
-        role: user.role === UserRole.ADMIN ? 'ADMIN' : 'MEMBER',
+        role: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
       },
     });
   }
@@ -512,7 +512,7 @@ async function createNotifications(users: any[]) {
           title: 'Nouvelle invitation FMPA',
           message: 'Vous êtes invité à participer à la Formation PSE2',
           actionUrl: '/dashboard/fmpa/3',
-          data: { fmpaId: '3' },
+          data: JSON.stringify({ fmpaId: '3' }),
         },
       })
     );
@@ -526,13 +526,13 @@ async function createNotifications(users: any[]) {
           title: 'Rappel: Manœuvre demain',
           message: 'N\'oubliez pas la manœuvre mensuelle demain à 9h',
           actionUrl: '/dashboard/fmpa/2',
-          data: { fmpaId: '2' },
+          data: JSON.stringify({ fmpaId: '2' }),
           readAt: subDays(new Date(), 1),
         },
       })
     );
 
-    if (user.role === UserRole.ADMIN || user.role === UserRole.MANAGER) {
+    if (user.role === 'ADMIN' || user.role === 'MANAGER') {
       notifications.push(
         await prisma.notification.create({
           data: {
