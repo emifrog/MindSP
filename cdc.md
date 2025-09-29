@@ -67,13 +67,7 @@ mindsp/
 │   ├── notification-service/   # Service notifications
 │   ├── export-service/         # Service exports (TTA, PDF)
 │   ├── sync-service/           # Service synchronisation
-│   └── ai-service/             # Service IA/ML
-│
-├── infrastructure/              # Infrastructure as Code
-│   ├── terraform/              # Configuration Terraform
-│   ├── kubernetes/             # Manifests Kubernetes
-│   ├── docker/                 # Dockerfiles
-│   └── scripts/                # Scripts de déploiement
+│   └── ai-service/             # Service IA/ML  
 │
 ├── docs/                        # Documentation
 │   ├── api/                    # Documentation API
@@ -281,7 +275,6 @@ services/auth-service/
 │   ├── integration/
 │   └── fixtures/
 │
-├── Dockerfile                  # Container
 ├── package.json
 └── tsconfig.json
 
@@ -343,7 +336,6 @@ packages/ui/
 Mindsp/
 ├── package.json                 # Workspace configuration
 ├── turbo.json                  # Turborepo config
-├── pnpm-workspace.yaml         # PNPM workspaces
 ├── .gitignore
 ├── .env.example
 ├── .nvmrc                      # Node version
