@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,11 +16,6 @@ export const metadata: Metadata = {
     initialScale: 1,
     maximumScale: 1,
   },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "MindSP",
-  },
 };
 
 export default function RootLayout({
@@ -29,7 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   );
 }

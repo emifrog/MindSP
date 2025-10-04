@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardContent,
@@ -8,8 +10,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, MessageSquare, GraduationCap } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function DashboardPage() {
+  const { user, tenantSlug } = useAuth();
   const stats = [
     {
       title: "FMPA à venir",
@@ -71,7 +75,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold">Tableau de bord</h1>
         <p className="text-muted-foreground">
-          Bienvenue sur MindSP - Gestion SDIS
+          Bienvenue {user?.name} - {tenantSlug?.toUpperCase()}
         </p>
       </div>
 

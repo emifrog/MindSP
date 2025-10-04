@@ -1,4 +1,7 @@
-import { Bell, User } from "lucide-react";
+"use client";
+
+import { Bell, User, LogOut } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,8 +12,38 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export function Header() {
+  const { data: session } = useSession();
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getRoleBadge = (role?: string) => {
+    const roleMap: Record<
+      string,
+      { label: string; variant: "default" | "secondary" | "destructive" }
+    > = {
+      SUPER_ADMIN: { label: "Super Admin", variant: "destructive" },
+      ADMIN: { label: "Admin", variant: "default" },
+      MANAGER: { label: "Manager", variant: "secondary" },
+      USER: { label: "Utilisateur", variant: "secondary" },
+    };
+    return roleMap[role || "USER"] || roleMap.USER;
+  };
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/auth/login" });
+  };
+
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-6">
       <div className="flex items-center gap-4">
@@ -33,19 +66,42 @@ export function Header() {
             <Button variant="ghost" className="gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarFallback>
-                  <User className="h-4 w-4" />
+                  {getInitials(session?.user?.name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">Utilisateur</span>
+              <span className="text-sm font-medium">
+                {session?.user?.name || "Utilisateur"}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  {session?.user?.name}
+                </p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {session?.user?.email}
+                </p>
+                <div className="mt-2">
+                  <Badge
+                    variant={getRoleBadge(session?.user?.role).variant}
+                    className="text-xs"
+                  >
+                    {getRoleBadge(session?.user?.role).label}
+                  </Badge>
+                </div>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profil</DropdownMenuItem>
             <DropdownMenuItem>Paramètres</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
             </DropdownMenuItem>
           </DropdownMenuContent>
