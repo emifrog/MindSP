@@ -30,30 +30,30 @@ _Dernière mise à jour : 04 Octobre 2025_
 
 ---
 
-## ✅ PHASE 1 : FOUNDATION (0% ✅)
+## ✅ PHASE 1 : FOUNDATION (75% ✅)
 
 ### Application Next.js
 
-- [] Next.js 14 initialisé avec App Router
-- [] TypeScript configuré
-- [] Tailwind CSS configuré
-- [] Structure src/ complète
-- [] Layout principal créé
+- [x] Next.js 14 initialisé avec App Router
+- [x] TypeScript configuré
+- [x] Tailwind CSS configuré
+- [x] Structure src/ complète
+- [x] Layout principal créé
 
 ### Package UI
 
-- [] Package ui initialisé (inline)
-- [] Composants Button créés
-- [] Composants Form créés (Input, Label)
-- [] Composants Layout créés (Card, Badge)
-- [] Thème et tokens définis
+- [x] Package ui initialisé (inline)
+- [x] Composants Button créés
+- [x] Composants Form créés (Input, Label)
+- [x] Composants Layout créés (Card, Badge, Toast, Avatar, Dropdown)
+- [x] Thème et tokens définis
 
 ### Base de Données
 
-- [] SQLite configuré pour développement
-- [] Prisma installé et configuré
-- [] Schema adapté SQLite créé
-- [] Migration initiale appliquée
+- [x] PostgreSQL configuré (documentation)
+- [x] Prisma installé et configuré
+- [x] Schema complet créé
+- [] Migration initiale appliquée (nécessite PostgreSQL)
 - [] Seed data complet créé (2 tenants, 8 users, 6 FMPA, 26 participations)
 
 ### Tests Fondation
@@ -63,7 +63,7 @@ _Dernière mise à jour : 04 Octobre 2025_
 - [ ] Structure tests définie
 - [ ] Coverage report setup
 
-**Status : 0% ✅**
+**Status : 75% ✅ - Interface fonctionnelle, DB en attente de configuration**
 
 ---
 
