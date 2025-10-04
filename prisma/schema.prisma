@@ -1,0 +1,640 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// CORE MODELS
+// ================================
+
+model Tenant {
+  id          String   @id @default(uuid())
+  slug        String   @unique // sdis13, sdis06
+  name        String
+  domain      String   @unique // sdis13.mindsp.fr
+  status      TenantStatus @default(ACTIVE)
+  
+  // Configuration
+  config      Json?    // Settings flexibles
+  logo        String?
+  primaryColor String? @default("#1e40af")
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  fmpas       FMPA[]
+  messages    Message[]
+  conversations Conversation[]
+  formations  Formation[]
+  events      Event[]
+  documents   Document[]
+  notifications Notification[]
+  
+  @@index([slug])
+  @@index([domain])
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  tenantId      String
+  
+  // Authentication
+  email         String
+  passwordHash  String
+  emailVerified DateTime?
+  
+  // Profile
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  badge         String?    // Matricule
+  
+  // Role & Permissions
+  role          UserRole   @default(USER)
+  permissions   String[]   // Array of permission codes
+  
+  // Status
+  status        UserStatus @default(ACTIVE)
+  lastLoginAt   DateTime?
+  
+  // Refresh Tokens
+  refreshTokens RefreshToken[]
+  
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // FMPA
+  fmpasCreated  FMPA[]    @relation("FMPACreator")
+  participations Participation[]
+  
+  // Messaging
+  sentMessages  Message[] @relation("MessageSender")
+  conversationMembers ConversationMember[]
+  
+  // Formations
+  formationsCreated Formation[] @relation("FormationCreator")
+  formationRegistrations FormationRegistration[]
+  
+  // Events
+  eventsCreated Event[]   @relation("EventCreator")
+  eventParticipations EventParticipation[]
+  
+  // Notifications
+  notifications Notification[]
+  
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ================================
+// MODULE FMPA
+// ================================
+
+model FMPA {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Content
+  type        FMPAType
+  title       String
+  description String?  @db.Text
+  
+  // Schedule
+  startDate   DateTime
+  endDate     DateTime
+  location    String
+  
+  // Configuration
+  maxParticipants Int?
+  requiresApproval Boolean @default(false)
+  
+  // Status
+  status      FMPAStatus @default(DRAFT)
+  
+  // QR Code
+  qrCode      String?  @unique
+  
+  // Creator
+  createdById String
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("FMPACreator", fields: [createdById], references: [id])
+  participations Participation[]
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([startDate])
+  @@index([type])
+  @@map("fmpas")
+}
+
+enum FMPAType {
+  FORMATION
+  MANOEUVRE
+  PRESENCE_ACTIVE
+}
+
+enum FMPAStatus {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Participation {
+  id          String   @id @default(uuid())
+  fmpaId      String
+  userId      String
+  
+  // Status
+  status      ParticipationStatus @default(REGISTERED)
+  
+  // Timestamps
+  registeredAt DateTime @default(now())
+  confirmedAt  DateTime?
+  checkInTime  DateTime?
+  checkOutTime DateTime?
+  
+  // Notes
+  notes       String?  @db.Text
+  
+  // Relations
+  fmpa        FMPA     @relation(fields: [fmpaId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([fmpaId, userId])
+  @@index([fmpaId])
+  @@index([userId])
+  @@index([status])
+  @@map("participations")
+}
+
+enum ParticipationStatus {
+  REGISTERED
+  CONFIRMED
+  PRESENT
+  ABSENT
+  CANCELLED
+}
+
+// ================================
+// MODULE MESSAGING
+// ================================
+
+model Conversation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Type
+  type        ConversationType @default(DIRECT)
+  name        String?  // For group conversations
+  avatar      String?
+  
+  // Metadata
+  lastMessageAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members     ConversationMember[]
+  messages    Message[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+model ConversationMember {
+  id             String   @id @default(uuid())
+  conversationId String
+  userId         String
+  
+  // Status
+  role           MemberRole @default(MEMBER)
+  joinedAt       DateTime @default(now())
+  lastReadAt     DateTime?
+  
+  // Notifications
+  notificationsEnabled Boolean @default(true)
+  
+  // Relations
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_members")
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  tenantId       String
+  
+  // Content
+  content        String   @db.Text
+  type           MessageType @default(TEXT)
+  
+  // Attachments
+  attachments    Json?    // Array of file metadata
+  
+  // Status
+  status         MessageStatus @default(SENT)
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  
+  // Metadata
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User     @relation("MessageSender", fields: [senderId], references: [id])
+  reads          MessageRead[]
+  
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  DELETED
+}
+
+model MessageRead {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@map("message_reads")
+}
+
+// ================================
+// MODULE FORMATIONS
+// ================================
+
+model Formation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Content
+  code        String   // FOR-2025-001
+  title       String
+  description String?  @db.Text
+  
+  // Schedule
+  startDate   DateTime
+  endDate     DateTime
+  location    String
+  
+  // Configuration
+  maxParticipants Int?
+  minParticipants Int?
+  price       Float?   @default(0)
+  
+  // Instructor
+  instructor  String?
+  
+  // Status
+  status      FormationStatus @default(DRAFT)
+  
+  // Creator
+  createdById String
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("FormationCreator", fields: [createdById], references: [id])
+  registrations FormationRegistration[]
+  
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([status])
+  @@index([startDate])
+  @@map("formations")
+}
+
+enum FormationStatus {
+  DRAFT
+  OPEN
+  FULL
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model FormationRegistration {
+  id          String   @id @default(uuid())
+  formationId String
+  userId      String
+  
+  // Status
+  status      RegistrationStatus @default(PENDING)
+  
+  // Validation
+  validatedBy String?
+  validatedAt DateTime?
+  rejectionReason String?
+  
+  // Timestamps
+  registeredAt DateTime @default(now())
+  
+  // Relations
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([formationId, userId])
+  @@index([formationId])
+  @@index([userId])
+  @@index([status])
+  @@map("formation_registrations")
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+// ================================
+// MODULE AGENDA / EVENTS
+// ================================
+
+model Event {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Content
+  title       String
+  description String?  @db.Text
+  
+  // Schedule
+  startDate   DateTime
+  endDate     DateTime
+  allDay      Boolean  @default(false)
+  location    String?
+  
+  // Type
+  type        EventType @default(OTHER)
+  color       String?  @default("#3b82f6")
+  
+  // Creator
+  createdById String
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("EventCreator", fields: [createdById], references: [id])
+  participations EventParticipation[]
+  
+  @@index([tenantId])
+  @@index([startDate])
+  @@index([type])
+  @@map("events")
+}
+
+enum EventType {
+  GUARD_DUTY      // Garde
+  TRAINING        // Formation
+  MEETING         // Réunion
+  INTERVENTION    // Intervention
+  OTHER
+}
+
+model EventParticipation {
+  id          String   @id @default(uuid())
+  eventId     String
+  userId      String
+  
+  // Response
+  response    ParticipationResponse @default(NO_RESPONSE)
+  respondedAt DateTime?
+  
+  // Relations
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_participations")
+}
+
+enum ParticipationResponse {
+  NO_RESPONSE
+  ACCEPTED
+  DECLINED
+  MAYBE
+}
+
+// ================================
+// MODULE DOCUMENTS
+// ================================
+
+model Document {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Content
+  name        String
+  description String?  @db.Text
+  
+  // File
+  fileUrl     String
+  fileSize    Int      // bytes
+  mimeType    String
+  
+  // Organization
+  category    String?
+  tags        String[]
+  
+  // Access
+  isPublic    Boolean  @default(false)
+  
+  // Uploader
+  uploadedBy  String
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([category])
+  @@map("documents")
+}
+
+// ================================
+// MODULE NOTIFICATIONS
+// ================================
+
+model Notification {
+  id          String   @id @default(uuid())
+  tenantId    String
+  userId      String
+  
+  // Content
+  type        NotificationType
+  title       String
+  message     String   @db.Text
+  
+  // Link
+  linkUrl     String?
+  
+  // Status
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  FMPA_CREATED
+  FMPA_UPDATED
+  FMPA_CANCELLED
+  FMPA_REMINDER
+  MESSAGE_RECEIVED
+  FORMATION_APPROVED
+  FORMATION_REJECTED
+  EVENT_INVITATION
+  SYSTEM
+}
+
+// ================================
+// AUDIT LOG
+// ================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  userId      String?
+  
+  // Action
+  action      String   // CREATE_FMPA, UPDATE_USER, etc.
+  entity      String   // FMPA, User, etc.
+  entityId    String?
+  
+  // Data
+  changes     Json?    // Before/after
+  metadata    Json?    // IP, user-agent, etc.
+  
+  // Timestamp
+  createdAt   DateTime @default(now())
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
