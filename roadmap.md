@@ -102,6 +102,38 @@ _Dernière mise à jour : 29 Septembre 2025_
 - [x] Protected routes setup
 - [x] Redirection login automatique
 
+**Status : 0% ✅**
+
+---
+
+## PHASE 3 : MODULE FMPA (0%)
+### Modèle Données
+• [ ] Schema FMPA Prisma
+• [ ] Relations définies
+• [ ] Migrations exécutées
+• [ ] Types TypeScript générés
+• [ ] Validation schemas (Zod)
+### API FMPA
+• [ ] GET /api/fmpa
+• [ ] POST /api/fmpa
+• [ ] PUT /api/fmpa/[id]
+• [ ] DELETE /api/fmpa/[id]
+• [ ] Service layer complet
+### Interface FMPA
+• [ ] Liste FMPA page
+• [ ] Détail FMPA page
+• [ ] Création FMPA form
+• [ ] Edition FMPA form
+• [ ] Calendrier view
+### Fonctionnalités FMPA
+• [ ] Inscriptions participants
+• [ ] Validation workflow
+• [ ] Génération QR codes
+• [ ] Export liste émargement
+• [ ] Notifications rappel
+
+**Status : 0% ✅**
+
 ---
 
 ## ✅ PHASE 4 : MESSAGERIE & TEMPS RÉEL (0% ✅)
