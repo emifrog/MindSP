@@ -1,14 +1,18 @@
 ### Checklist Complète par Phase - Projet MindSP
-*Dernière mise à jour : 29 Septembre 2025*
+
+_Dernière mise à jour : 29 Septembre 2025_
 
 ## ✅ PHASE 0 : INITIALISATION (0% ✅)
+
 ### Structure Projet
+
 - [] Repository Git initialisé
 - [] Structure monorepo créée
 - [] turbo.json configuré
 - [] tsconfig.json racine configuré
 
 ### Configuration Dev
+
 - [] ESLint configuré
 - [] Prettier configuré
 - [] Husky hooks installés
@@ -16,6 +20,7 @@
 - [] .gitignore complet
 
 ### Documentation
+
 - [] README.md créé
 - [] CONTRIBUTING.md créé (dans README)
 - [] Structure dossiers docs/
@@ -26,7 +31,9 @@
 ---
 
 ## ✅ PHASE 1 : FOUNDATION (0% ✅)
+
 ### Application Next.js
+
 - [] Next.js 14 initialisé avec App Router
 - [] TypeScript configuré
 - [] Tailwind CSS configuré
@@ -34,6 +41,7 @@
 - [] Layout principal créé
 
 ### Package UI
+
 - [] Package ui initialisé (inline)
 - [] Composants Button créés
 - [] Composants Form créés (Input, Label)
@@ -41,6 +49,7 @@
 - [] Thème et tokens définis
 
 ### Base de Données
+
 - [] SQLite configuré pour développement
 - [] Prisma installé et configuré
 - [] Schema adapté SQLite créé
@@ -48,6 +57,7 @@
 - [] Seed data complet créé (2 tenants, 8 users, 6 FMPA, 26 participations)
 
 ### Tests Fondation
+
 - [ ] Jest configuré
 - [ ] Premier test unitaire passant
 - [ ] Structure tests définie
@@ -58,7 +68,9 @@
 ---
 
 ## ✅ PHASE 2 : AUTH & MULTI-TENANCY (0% ✅)
+
 ### Authentication Backend
+
 - [] NextAuth configuré avec JWT et refresh tokens
 - [] JWT strategy implémentée
 - [] Refresh token fonctionnel
@@ -68,6 +80,7 @@
 - [] Intégration backend Express.js
 
 ### Multi-tenancy
+
 - [] Middleware tenant créé et configuré
 - [] Tenant extraction fonctionnel (subdomain)
 - [] RLS Prisma configuré (schema)
@@ -75,6 +88,7 @@
 - [] Subdomain routing (next.config)
 
 ### Pages Auth
+
 - [] Page login créée
 - [] Page register créée avec UX complète (multi-step, validation Zod)
 - [] Page forgot-password créée avec workflow complet
@@ -82,6 +96,7 @@
 - [] Messages d'erreur UX
 
 ### Protection Routes
+
 - [] Middleware NextAuth pour protection routes
 - [x] useAuth hook avec NextAuth
 - [x] Protected routes setup
@@ -90,7 +105,9 @@
 ---
 
 ## ✅ PHASE 4 : MESSAGERIE & TEMPS RÉEL (0% ✅)
+
 ### WebSocket Infrastructure
+
 - [] Socket.IO serveur setup complet
 - [] Socket.IO client setup
 - [] Rooms par tenant avec isolation
@@ -100,6 +117,7 @@
 - [] Gestion de la présence (online/offline)
 
 ### Module Messages
+
 - [] Schema messages DB
 - [] API messages CRUD complète
 - [] Interface chat UI complète (style Discord/Slack)
@@ -111,6 +129,7 @@
 - [] Messages lus/non lus
 
 ### Notifications
+
 - [] Service notifications complet
 - [] Push notifications temps réel (Socket.IO)
 - [] Notifications toast avec actions
@@ -119,6 +138,7 @@
 - [] Préférences utilisateur
 
 ### Queue System
+
 - [] Queue système avec Redis
 - [] Jobs processors (notifications, emails)
 - [] Retry strategy configurée
@@ -130,7 +150,9 @@
 ---
 
 ## 🟡 PHASE 5 : PWA & OFFLINE (0% 🔄)
+
 ### Configuration PWA
+
 - [] next-pwa configuré
 - [] manifest.json créé
 - [] Icons générées (placeholders)
@@ -138,6 +160,7 @@
 - [] Installation prompt
 
 ### Service Worker
+
 - [] Service worker enregistré
 - [] Cache strategies définies
 - [] Offline page
@@ -145,6 +168,7 @@
 - [] Update notification
 
 ### Offline Storage
+
 - [] IndexedDB setup (Dexie installé)
 - [] Data models offline
 - [] Sync strategy (store créé)
@@ -152,6 +176,7 @@
 - [] Queue offline actions (store)
 
 ### Mobile Optimization
+
 - [] Responsive design partiel
 - [] Touch gestures
 - [] Mobile navigation (drawer)
@@ -163,7 +188,9 @@
 ---
 
 ## 📋 PHASE 6 : MODULES COMPLÉMENTAIRES (0% 📋)
+
 ### Module Agenda
+
 - [ ] Calendrier component
 - [ ] Planning view
 - [ ] Gestion disponibilités
@@ -171,6 +198,7 @@
 - [ ] Export PDF planning
 
 ### Module Export TTA
+
 - [ ] Calcul indemnités
 - [ ] Validation heures
 - [ ] Export SEPA XML
@@ -178,6 +206,7 @@
 - [ ] Historique exports
 
 ### Module Formation
+
 - [ ] Catalogue formations
 - [ ] Inscription workflow
 - [ ] Validation hiérarchique
@@ -185,6 +214,7 @@
 - [ ] Suivi présences
 
 ### Module Portails
+
 - [ ] Portail SDIS
 - [ ] Portails spécialités
 - [ ] Gestion contenu
@@ -198,6 +228,7 @@
 ## 🟡 PHASE 7 : INFRASTRUCTURE & DEVOPS (0% 🔄)
 
 ### CI/CD Pipeline
+
 - [x] GitHub Actions workflow
 - [ ] Tests automatiques
 - [ ] Build automatique
@@ -205,6 +236,7 @@
 - [ ] Deploy prod manuel
 
 ### Kubernetes
+
 - [ ] Manifests K8s créés
 - [ ] Deployments configurés
 - [ ] Services exposés
@@ -212,18 +244,21 @@
 - [ ] Secrets management
 
 ### Monitoring
+
 - [ ] Prometheus setup
 - [ ] Grafana dashboards
 - [ ] Alerting rules
 - [ ] Log aggregation
 - [ ] Health checks
 
-**Status : 🔄 0% 🔄 - Infrastructure à implémenter*
+\*_Status : 🔄 0% 🔄 - Infrastructure à implémenter_
 
 ---
 
 ## 📋 PHASE 8 : TESTS & OPTIMISATION (0% 📋)
+
 ### Tests Unitaires
+
 - [ ] Coverage > 80%
 - [ ] Components tests
 - [ ] Services tests
@@ -231,6 +266,7 @@
 - [ ] Utils tests
 
 ### Tests Intégration
+
 - [ ] API endpoints tests
 - [ ] Database tests
 - [ ] Auth flow tests
@@ -238,6 +274,7 @@
 - [ ] WebSocket tests
 
 ### Tests E2E
+
 - [ ] Cypress setup
 - [ ] Scenarios critiques
 - [ ] Cross-browser tests
@@ -245,6 +282,7 @@
 - [ ] Offline tests
 
 ### Optimisation
+
 - [ ] Bundle size < 200KB
 - [ ] Lighthouse score > 90
 - [ ] Image optimization
@@ -256,7 +294,9 @@
 ---
 
 ## 📋 PHASE 9 : PRODUCTION (0% 📋)
+
 ### Sécurité Production
+
 - [ ] Environment variables
 - [] Security headers (next.config)
 - [ ] Rate limiting
@@ -264,6 +304,7 @@
 - [ ] CSP policy
 
 ### Déploiement
+
 - [ ] Domaine configuré
 - [ ] SSL certificates
 - [ ] CDN setup
@@ -271,6 +312,7 @@
 - [ ] Rollback plan
 
 ### Monitoring Prod
+
 - [ ] Sentry configured
 - [ ] Analytics setup
 - [ ] Uptime monitoring
@@ -278,6 +320,7 @@
 - [ ] Error tracking
 
 ### Documentation Finale
+
 - [ ] API documentation
 - [ ] User documentation
 - [ ] Admin documentation
@@ -287,29 +330,32 @@
 **Status : 📋 PLANIFIÉ**
 
 ---
+
 ## 📊 RÉSUMÉ GLOBAL
 
 ### Progression par Phase
-- **Phase 0** : 0% 
-- **Phase 1** : 0%    
-- **Phase 2** : 0%    
-- **Phase 3** : 0%   
-- **Phase 4** : 0%    
-- **Phase 5** : 0% 
-- **Phase 6** : 0% 
-- **Phase 7** : 0% 
-- **Phase 8** : 0% 
-- **Phase 9** : 0% 
+
+- **Phase 0** : 0%
+- **Phase 1** : 0%
+- **Phase 2** : 0%
+- **Phase 3** : 0%
+- **Phase 4** : 0%
+- **Phase 5** : 0%
+- **Phase 6** : 0%
+- **Phase 7** : 0%
+- **Phase 8** : 0%
+- **Phase 9** : 0%
 
 ### Métriques Actuelles
-- **Progression Globale** : 0%
 
+- **Progression Globale** : 0%
 
 ---
 
 ## 🎯 CRITÈRES DE VALIDATION
 
 ### Phase Complète si :
+
 - ✅ Tous les items cochés
 - ✅ Tests passants > 95%
 - ✅ Code review approuvée
@@ -317,6 +363,7 @@
 - ✅ Demo client validée
 
 ### Go/No-Go Criteria :
+
 - 🟢 **GO** : > 90% items complétés
 - 🟡 **REVIEW** : 70-90% items complétés
 - 🔴 **NO-GO** : < 70% items complétés
