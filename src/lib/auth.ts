@@ -1,12 +1,11 @@
-import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { NextAuthConfig } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
-import { User } from "@prisma/client";
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+export const authOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -15,7 +14,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
         tenantSlug: { label: "Tenant", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials: Record<string, string> | undefined) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email et mot de passe requis");
         }
@@ -80,7 +79,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 jours
   },
   pages: {
@@ -89,7 +88,7 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session }: any) {
       // Première connexion
       if (user) {
         token.id = user.id;
@@ -105,7 +104,7 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
@@ -116,12 +115,12 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    async signIn({ user }) {
-      console.log(`✅ Connexion réussie: ${user.email}`);
+    async signIn({ user }: any) {
+      // Connexion réussie
     },
-    async signOut({ token }) {
-      console.log(`👋 Déconnexion: ${token?.email}`);
+    async signOut() {
+      // Déconnexion
     },
   },
   debug: process.env.NODE_ENV === "development",
-};
+} satisfies NextAuthConfig;
