@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
@@ -53,11 +53,7 @@ export default function FMPAPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchFMPAs();
-  }, [statusFilter, typeFilter, searchQuery]);
-
-  const fetchFMPAs = async () => {
+  const fetchFMPAs = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -94,7 +90,11 @@ export default function FMPAPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, typeFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchFMPAs();
+  }, [fetchFMPAs]);
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {

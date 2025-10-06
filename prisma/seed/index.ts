@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { seedFMPA } from "./fmpa-data";
 
 const prisma = new PrismaClient();
 
@@ -186,165 +187,43 @@ async function main() {
 
   console.log(`✅ ${5 + 3} utilisateurs créés`);
 
-  // Créer des FMPA pour SDIS13
-  console.log("📅 Création des FMPA...");
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const nextWeek = new Date(now);
-  nextWeek.setDate(nextWeek.getDate() + 7);
+  // Créer des FMPA réalistes avec le fichier de seed dédié
+  const fmpas = await seedFMPA(prisma, tenant1.id, admin1.id);
 
-  const fmpa1 = await prisma.fMPA.create({
-    data: {
-      tenantId: tenant1.id,
-      type: "MANOEUVRE",
-      title: "Manœuvre incendie - Feu de véhicule",
-      description: "Exercice pratique sur feu de véhicule avec ARI",
-      startDate: tomorrow,
-      endDate: new Date(tomorrow.getTime() + 3 * 60 * 60 * 1000), // +3h
-      location: "Centre de formation SDIS13",
-      maxParticipants: 12,
-      status: "PUBLISHED",
-      createdById: admin1.id,
-      qrCode: "FMPA-2025-001",
-    },
-  });
-
-  const fmpa2 = await prisma.fMPA.create({
-    data: {
-      tenantId: tenant1.id,
-      type: "FORMATION",
-      title: "Formation premiers secours PSE1",
-      description: "Formation initiale aux premiers secours en équipe niveau 1",
-      startDate: nextWeek,
-      endDate: new Date(nextWeek.getTime() + 35 * 60 * 60 * 1000), // +35h (5 jours)
-      location: "Centre de formation SDIS13",
-      maxParticipants: 10,
-      requiresApproval: true,
-      status: "PUBLISHED",
-      createdById: manager1.id,
-      qrCode: "FMPA-2025-002",
-    },
-  });
-
-  const fmpa3 = await prisma.fMPA.create({
-    data: {
-      tenantId: tenant1.id,
-      type: "PRESENCE_ACTIVE",
-      title: "Présence active - Garde 24h",
-      description: "Garde 24h au centre de secours principal",
-      startDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), // +2 jours
-      endDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), // +3 jours
-      location: "CIS Marseille Centre",
-      maxParticipants: 8,
-      status: "PUBLISHED",
-      createdById: admin1.id,
-      qrCode: "FMPA-2025-003",
-    },
-  });
-
-  // FMPA pour SDIS06
-  const fmpa4 = await prisma.fMPA.create({
-    data: {
-      tenantId: tenant2.id,
-      type: "MANOEUVRE",
-      title: "Manœuvre sauvetage aquatique",
-      description: "Exercice de sauvetage en milieu aquatique",
-      startDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
-      endDate: new Date(
-        now.getTime() + 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000
-      ),
-      location: "Plage du Larvotto",
-      maxParticipants: 15,
-      status: "PUBLISHED",
-      createdById: admin2.id,
-      qrCode: "FMPA-2025-004",
-    },
-  });
-
-  console.log(`✅ 4 FMPA créés`);
-
-  // Créer des participations
+  // Créer des participations pour quelques FMPA
   console.log("✍️ Création des participations...");
-  await Promise.all([
-    // Participations FMPA1
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa1.id,
-        userId: users1[0].id,
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-    }),
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa1.id,
-        userId: users1[1].id,
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-    }),
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa1.id,
-        userId: users1[2].id,
-        status: "REGISTERED",
-      },
-    }),
-    // Participations FMPA2
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa2.id,
-        userId: users1[0].id,
-        status: "REGISTERED",
-      },
-    }),
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa2.id,
-        userId: users1[1].id,
-        status: "REGISTERED",
-      },
-    }),
-    // Participations FMPA3
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa3.id,
-        userId: manager1.id,
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-    }),
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa3.id,
-        userId: users1[2].id,
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-    }),
-    // Participations FMPA4
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa4.id,
-        userId: users2[0].id,
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-      },
-    }),
-    prisma.participation.create({
-      data: {
-        fmpaId: fmpa4.id,
-        userId: users2[1].id,
-        status: "REGISTERED",
-      },
-    }),
-  ]);
+  const participations = [];
 
-  console.log(`✅ 9 participations créées`);
+  // Ajouter des participations aux 5 premières FMPA
+  for (let i = 0; i < Math.min(5, fmpas.length); i++) {
+    const fmpa = fmpas[i];
+
+    // 2-3 participants par FMPA
+    const numParticipants = Math.floor(Math.random() * 2) + 2;
+    for (let j = 0; j < numParticipants; j++) {
+      const user = users1[j % users1.length];
+      const statuses = ["REGISTERED", "CONFIRMED", "CONFIRMED"];
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+      participations.push(
+        prisma.participation.create({
+          data: {
+            fmpaId: fmpa.id,
+            userId: user.id,
+            status,
+            confirmedAt: status === "CONFIRMED" ? new Date() : null,
+          },
+        })
+      );
+    }
+  }
+
+  await Promise.all(participations);
+  console.log(`✅ ${participations.length} participations créées`);
 
   // Créer des formations
   console.log("🎓 Création des formations...");
+  const now = new Date();
   await prisma.formation.create({
     data: {
       tenantId: tenant1.id,
@@ -369,8 +248,10 @@ async function main() {
   console.log("\n📊 Résumé:");
   console.log(`   - 2 tenants (SDIS13, SDIS06)`);
   console.log(`   - 8 utilisateurs (2 admins, 1 manager, 5 users)`);
-  console.log(`   - 4 FMPA`);
-  console.log(`   - 9 participations`);
+  console.log(
+    `   - ${fmpas.length} FMPA (15 formations, 10 manœuvres, 5 présences actives)`
+  );
+  console.log(`   - ${participations.length} participations`);
   console.log(`   - 1 formation`);
   console.log("\n🔐 Identifiants de connexion:");
   console.log(`   SDIS13 Admin: admin@sdis13.fr / Password123!`);
