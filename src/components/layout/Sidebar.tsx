@@ -60,8 +60,8 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
-          <p>Version 0.1.0</p>
-          <p>Phase 1 - Foundation</p>
+          <p>Version 0.4.0</p>
+          <p>Phase 4 - Messagerie & Temps Réel</p>
         </div>
       </div>
     </div>

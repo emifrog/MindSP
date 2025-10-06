@@ -175,7 +175,7 @@ _Dernière mise à jour : 06 Octobre 2025_
 - [x] Reconnection handling (client)
 - [x] Event types définis et typés
 - [x] Authentification sur websockets
-- [ ] Gestion de la présence (online/offline)
+- [x] Gestion de la présence (online/offline)
 
 ### Module Messages
 
@@ -195,20 +195,21 @@ _Dernière mise à jour : 06 Octobre 2025_
 
 ### Notifications
 
-- [ ] Service notifications complet
-- [ ] Push notifications temps réel (Socket.IO)
-- [ ] Notifications toast avec actions
+- [x] Service notifications complet
+- [x] Push notifications temps réel (Socket.IO)
+- [x] Notifications toast avec actions
 - [x] Email templates (déjà créés Phase 3)
-- [ ] In-app notifications (hook)
+- [x] In-app notifications (hook useNotifications)
+- [x] NotificationBell component dans header
 - [ ] Préférences utilisateur
 
 ### Queue System
 
-- [ ] Queue système avec Redis
-- [ ] Jobs processors (notifications, emails)
-- [ ] Retry strategy configurée
+- [x] Queue système avec Redis (BullMQ)
+- [x] Jobs processors (notifications, emails)
+- [x] Retry strategy configurée
 - [ ] Dashboard monitoring
-- [ ] Background jobs pour notifications
+- [x] Background jobs pour notifications et rappels
 
 **Status : 100% ✅ - Messagerie temps réel opérationnelle !**
 
