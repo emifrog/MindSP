@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Users, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MessageSquare, Users, Plus, Search } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
@@ -45,7 +46,11 @@ interface Conversation {
 export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [filteredConversations, setFilteredConversations] = useState<
+    Conversation[]
+  >([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchConversations();
@@ -59,6 +64,7 @@ export default function MessagesPage() {
 
       if (response.ok) {
         setConversations(data.conversations);
+        setFilteredConversations(data.conversations);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des conversations:", error);
@@ -66,6 +72,24 @@ export default function MessagesPage() {
       setLoading(false);
     }
   };
+
+  // Filtrer les conversations par recherche
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredConversations(conversations);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = conversations.filter((conv) => {
+      const name = getConversationName(conv).toLowerCase();
+      const lastMessage = getLastMessage(conv).toLowerCase();
+      return name.includes(query) || lastMessage.includes(query);
+    });
+
+    setFilteredConversations(filtered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, conversations]);
 
   const getConversationName = (conversation: Conversation) => {
     if (conversation.type === "DIRECT") {
@@ -95,10 +119,23 @@ export default function MessagesPage() {
           <h1 className="text-3xl font-bold">Messages</h1>
           <p className="text-muted-foreground">Communiquez avec votre équipe</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvelle conversation
+        <Button asChild>
+          <Link href="/messages/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle conversation
+          </Link>
         </Button>
+      </div>
+
+      {/* Barre de recherche */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher une conversation..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
       {/* Liste des conversations */}
@@ -120,9 +157,19 @@ export default function MessagesPage() {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredConversations.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">Aucun résultat</h3>
+            <p className="text-muted-foreground">
+              Aucune conversation ne correspond à votre recherche
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4">
-          {conversations.map((conversation) => (
+          {filteredConversations.map((conversation) => (
             <Link key={conversation.id} href={`/messages/${conversation.id}`}>
               <Card className="cursor-pointer transition-shadow hover:shadow-lg">
                 <CardHeader>
