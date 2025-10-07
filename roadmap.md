@@ -253,7 +253,7 @@ _Dernière mise à jour : 06 Octobre 2025_
 
 ---
 
-## 📋 PHASE 6 : MODULES COMPLÉMENTAIRES (0% 📋)
+## 📋 PHASE 6 : MODULES COMPLÉMENTAIRES (0% 🔄)
 
 ### Module Agenda
 
@@ -287,7 +287,7 @@ _Dernière mise à jour : 06 Octobre 2025_
 - [ ] Système actualités
 - [ ] Base documentaire
 
-**Status : 📋 PLANIFIÉ**
+**Status : 🔄 0% ✅ - Modules à implémenter**
 
 ---
 

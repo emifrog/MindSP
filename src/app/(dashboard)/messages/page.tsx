@@ -51,6 +51,11 @@ export default function MessagesPage() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     fetchConversations();
@@ -110,6 +115,10 @@ export default function MessagesPage() {
     const lastMsg = conversation.messages[0];
     return `${lastMsg.sender.firstName}: ${lastMsg.content.substring(0, 50)}${lastMsg.content.length > 50 ? "..." : ""}`;
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">

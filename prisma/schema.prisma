@@ -37,6 +37,11 @@ model Tenant {
   events      Event[]
   documents   Document[]
   notifications Notification[]
+  availabilities Availability[]
+  calendarEvents CalendarEvent[]
+  formationRegistrations FormationRegistration[]
+  ttaEntries TTAEntry[]
+  ttaExports TTAExport[]
   
   @@index([slug])
   @@index([domain])
@@ -94,7 +99,9 @@ model User {
   
   // Formations
   formationsCreated Formation[] @relation("FormationCreator")
+  formationsInstructed Formation[] @relation("FormationInstructor")
   formationRegistrations FormationRegistration[]
+  formationValidations FormationRegistration[] @relation("FormationValidator")
   
   // Events
   eventsCreated Event[]   @relation("EventCreator")
@@ -102,6 +109,16 @@ model User {
   
   // Notifications
   notifications Notification[]
+  
+  // Agenda / Calendrier
+  availabilities Availability[]
+  calendarEventsCreated CalendarEvent[] @relation("EventCreator")
+  calendarEventParticipations EventParticipant[]
+  
+  // TTA
+  ttaEntries TTAEntry[]
+  ttaValidations TTAEntry[] @relation("TTAValidator")
+  ttaExportsCreated TTAExport[]
   
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -176,6 +193,8 @@ model FMPA {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdBy   User     @relation("FMPACreator", fields: [createdById], references: [id])
   participations Participation[]
+  calendarEvent CalendarEvent?
+  ttaEntries TTAEntry[]
   
   @@index([tenantId])
   @@index([status])
@@ -372,6 +391,17 @@ model Formation {
   title       String
   description String?  @db.Text
   
+  // Durée et prérequis
+  duration    Int?     // en heures
+  prerequisites String? @db.Text
+  
+  // Validité
+  validityYears Int?   // Durée de validité (ex: 3 ans)
+  
+  // Catégorie
+  category    FormationCategory @default(AUTRE)
+  level       FormationLevel @default(CONTINUE)
+  
   // Schedule
   startDate   DateTime
   endDate     DateTime
@@ -383,7 +413,8 @@ model Formation {
   price       Float?   @default(0)
   
   // Instructor
-  instructor  String?
+  instructorId String?
+  instructor  User?    @relation("FormationInstructor", fields: [instructorId], references: [id])
   
   // Status
   status      FormationStatus @default(DRAFT)
@@ -404,7 +435,24 @@ model Formation {
   @@index([tenantId])
   @@index([status])
   @@index([startDate])
+  @@index([category])
   @@map("formations")
+}
+
+enum FormationCategory {
+  INCENDIE
+  SECOURS
+  TECHNIQUE
+  MANAGEMENT
+  REGLEMENTAIRE
+  AUTRE
+}
+
+enum FormationLevel {
+  INITIALE
+  CONTINUE
+  PERFECTIONNEMENT
+  SPECIALISATION
 }
 
 enum FormationStatus {
@@ -420,6 +468,7 @@ model FormationRegistration {
   id          String   @id @default(uuid())
   formationId String
   userId      String
+  tenantId    String
   
   // Status
   status      RegistrationStatus @default(PENDING)
@@ -429,16 +478,29 @@ model FormationRegistration {
   validatedAt DateTime?
   rejectionReason String?
   
+  // Présence
+  attended    Boolean?
+  attendanceRate Float?
+  
+  // Résultat
+  passed      Boolean?
+  score       Float?
+  certificateUrl String?
+  
   // Timestamps
   registeredAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
   // Relations
   formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  validator   User?    @relation("FormationValidator", fields: [validatedBy], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   
   @@unique([formationId, userId])
   @@index([formationId])
   @@index([userId])
+  @@index([tenantId])
   @@index([status])
   @@map("formation_registrations")
 }
@@ -638,3 +700,242 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// ================================
+// MODULE AGENDA / CALENDRIER
+// ================================
+
+model Availability {
+  id          String   @id @default(uuid())
+  userId      String
+  tenantId    String
+  
+  // Période
+  startDate   DateTime
+  endDate     DateTime
+  
+  // Type
+  type        AvailabilityType
+  reason      String?
+  
+  // Récurrence
+  isRecurring Boolean  @default(false)
+  recurrence  Json?    // Pattern de récurrence (ex: tous les lundis)
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@map("availabilities")
+}
+
+enum AvailabilityType {
+  AVAILABLE
+  UNAVAILABLE
+  PARTIAL
+}
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Contenu
+  title       String
+  description String?  @db.Text
+  location    String?
+  
+  // Dates
+  startDate   DateTime
+  endDate     DateTime
+  allDay      Boolean  @default(false)
+  
+  // Type et couleur
+  type        CalendarEventType
+  color       String?  @default("#3b82f6")
+  
+  // Participants
+  participants EventParticipant[]
+  
+  // Relations optionnelles
+  fmpaId      String?  @unique
+  fmpa        FMPA?    @relation(fields: [fmpaId], references: [id], onDelete: SetNull)
+  
+  // Créateur
+  createdBy   String
+  creator     User     @relation("EventCreator", fields: [createdBy], references: [id])
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@index([type])
+  @@map("calendar_events")
+}
+
+enum CalendarEventType {
+  FMPA
+  FORMATION
+  MEETING
+  INTERVENTION
+  GARDE
+  ASTREINTE
+  OTHER
+}
+
+model EventParticipant {
+  id          String   @id @default(uuid())
+  eventId     String
+  userId      String
+  
+  status      ParticipantStatus @default(PENDING)
+  response    String?  // Message de réponse optionnel
+  respondedAt DateTime?
+  
+  event       CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([status])
+  @@map("event_participants")
+}
+
+enum ParticipantStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+// ================================
+// MODULE TTA (Temps de Travail Additionnel)
+// ================================
+
+model TTAEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  tenantId    String
+  
+  // Période
+  date        DateTime
+  month       Int
+  year        Int
+  
+  // Activité
+  activityType ActivityType
+  fmpaId      String?
+  description String?  @db.Text
+  
+  // Heures
+  hours       Float
+  nightHours  Float?   @default(0)
+  sundayHours Float?   @default(0)
+  holidayHours Float?  @default(0)
+  
+  // Indemnités (calculées)
+  baseAmount  Float
+  nightBonus  Float?   @default(0)
+  sundayBonus Float?   @default(0)
+  holidayBonus Float?  @default(0)
+  totalAmount Float
+  
+  // Validation
+  status      TTAStatus @default(PENDING)
+  validatedBy String?
+  validatedAt DateTime?
+  rejectionReason String?
+  
+  // Export
+  exportId    String?
+  exported    Boolean  @default(false)
+  exportedAt  DateTime?
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fmpa        FMPA?    @relation(fields: [fmpaId], references: [id], onDelete: SetNull)
+  validator   User?    @relation("TTAValidator", fields: [validatedBy], references: [id])
+  export      TTAExport? @relation(fields: [exportId], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([tenantId])
+  @@index([month, year])
+  @@index([status])
+  @@index([date])
+  @@map("tta_entries")
+}
+
+enum ActivityType {
+  FMPA
+  INTERVENTION
+  FORMATION
+  GARDE
+  ASTREINTE
+  AUTRE
+}
+
+enum TTAStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+  EXPORTED
+}
+
+model TTAExport {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Période
+  month       Int
+  year        Int
+  
+  // Export
+  format      ExportFormat
+  fileUrl     String
+  fileName    String
+  
+  // Stats
+  totalEntries Int
+  totalAmount Float
+  totalUsers  Int
+  
+  // Créateur
+  createdBy   String
+  creator     User     @relation(fields: [createdBy], references: [id])
+  
+  // Entrées
+  entries     TTAEntry[]
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([tenantId])
+  @@index([month, year])
+  @@map("tta_exports")
+}
+
+enum ExportFormat {
+  SEPA_XML
+  CSV
+  EXCEL
+  PDF
+}
+

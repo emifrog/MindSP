@@ -8,15 +8,17 @@ import {
   GraduationCap,
   FileText,
   Settings,
+  Euro,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Home },
   { name: "FMPA", href: "/fmpa", icon: Calendar },
+  { name: "Agenda", href: "/agenda", icon: Calendar },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Formations", href: "/formations", icon: GraduationCap },
-  { name: "Agenda", href: "/agenda", icon: Calendar },
+  { name: "TTA", href: "/tta", icon: Euro },
   { name: "Personnel", href: "/personnel", icon: Users },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Paramètres", href: "/settings", icon: Settings },
