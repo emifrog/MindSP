@@ -1,27 +1,21 @@
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  Calendar,
-  MessageSquare,
-  Users,
-  GraduationCap,
-  FileText,
-  Settings,
-  Euro,
-} from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+import { Icons } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Tableau de bord", href: "/", icon: Home },
-  { name: "FMPA", href: "/fmpa", icon: Calendar },
-  { name: "Agenda", href: "/agenda", icon: Calendar },
-  { name: "Messages", href: "/messages", icon: MessageSquare },
-  { name: "Formations", href: "/formations", icon: GraduationCap },
-  { name: "TTA", href: "/tta", icon: Euro },
-  { name: "Personnel", href: "/personnel", icon: Users },
-  { name: "Documents", href: "/documents", icon: FileText },
-  { name: "Paramètres", href: "/settings", icon: Settings },
+  { name: "Tableau de bord", href: "/", icon: Icons.nav.dashboard },
+  { name: "FMPA", href: "/fmpa", icon: Icons.pompier.feu },
+  { name: "Agenda", href: "/agenda", icon: Icons.nav.calendar },
+  { name: "Messages", href: "/messages", icon: Icons.nav.messages },
+  { name: "Formations", href: "/formations", icon: Icons.nav.formations },
+  { name: "TTA", href: "/tta", icon: Icons.nav.tta },
+  { name: "Personnel", href: "/personnel", icon: Icons.nav.personnel },
+  { name: "Documents", href: "/documents", icon: Icons.nav.documents },
+  { name: "Design", href: "/showcase", icon: "fluent-emoji:artist-palette" },
+  { name: "Paramètres", href: "/settings", icon: Icons.nav.settings },
 ];
 
 export function Sidebar() {
@@ -32,8 +26,14 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl">🚒</span>
-          <span className="text-xl font-bold text-primary">MindSP</span>
+          <Image
+            src="/logo.png"
+            alt="MindSP Logo"
+            width={120}
+            height={120}
+            priority
+            className="h-auto w-auto"
+          />
         </Link>
       </div>
 
@@ -52,7 +52,7 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <Icon name={item.icon} size="md" />
               {item.name}
             </Link>
           );

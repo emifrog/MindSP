@@ -39,7 +39,11 @@ export default function ShowcasePage() {
           }}
           secondaryAction={{
             label: "Documentation",
-            onClick: () => window.open("/DESIGN_SYSTEM_MODERNE.md"),
+            onClick: () => {
+              if (typeof window !== "undefined") {
+                window.open("/DESIGN_SYSTEM_MODERNE.md", "_blank");
+              }
+            },
           }}
         />
       </div>
@@ -210,7 +214,7 @@ export default function ShowcasePage() {
                 <Badge className="bg-primary text-primary-foreground">
                   Primary
                 </Badge>
-                <Badge className="bg-success text-success-foreground glow-primary">
+                <Badge className="glow-primary bg-success text-success-foreground">
                   Success
                 </Badge>
                 <Badge className="bg-warning text-warning-foreground">
@@ -219,7 +223,7 @@ export default function ShowcasePage() {
                 <Badge className="bg-destructive text-destructive-foreground">
                   Error
                 </Badge>
-                <Badge className="bg-info text-info-foreground glow-accent">
+                <Badge className="glow-accent bg-info text-info-foreground">
                   Info
                 </Badge>
               </div>
@@ -318,8 +322,8 @@ export default function ShowcasePage() {
             className="cursor-pointer transition-transform hover:scale-105"
           >
             <CardModernHeader>
-              <div className="bg-success/10 mb-4 w-fit rounded-full p-3">
-                <GraduationCap className="text-success h-8 w-8" />
+              <div className="mb-4 w-fit rounded-full bg-success/10 p-3">
+                <GraduationCap className="h-8 w-8 text-success" />
               </div>
               <CardModernTitle>Formations</CardModernTitle>
               <CardModernDescription>

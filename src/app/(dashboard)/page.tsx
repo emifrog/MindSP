@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, MessageSquare, GraduationCap } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+import { Icons } from "@/lib/icons";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function DashboardPage() {
@@ -19,29 +20,25 @@ export default function DashboardPage() {
       title: "FMPA à venir",
       value: "12",
       description: "Ce mois-ci",
-      icon: Calendar,
-      color: "text-blue-600",
+      icon: Icons.pompier.feu,
     },
     {
       title: "Personnel actif",
       value: "156",
       description: "Agents disponibles",
-      icon: Users,
-      color: "text-green-600",
+      icon: Icons.nav.personnel,
     },
     {
       title: "Messages",
       value: "8",
       description: "Non lus",
-      icon: MessageSquare,
-      color: "text-orange-600",
+      icon: Icons.nav.messages,
     },
     {
       title: "Formations",
       value: "5",
       description: "En cours",
-      icon: GraduationCap,
-      color: "text-purple-600",
+      icon: Icons.nav.formations,
     },
   ];
 
@@ -72,11 +69,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
-        <p className="text-muted-foreground">
-          Bienvenue {user?.name} - {tenantSlug?.toUpperCase()}
-        </p>
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Tableau de bord</h1>
+          <p className="text-muted-foreground">
+            Bienvenue {user?.name} - {tenantSlug?.toUpperCase()}
+          </p>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -87,7 +86,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">
                 {stat.title}
               </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <Icon name={stat.icon} size="md" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
@@ -143,19 +142,19 @@ export default function DashboardPage() {
           <CardContent>
             <div className="grid gap-2">
               <Button className="w-full justify-start" variant="outline">
-                <Calendar className="mr-2 h-4 w-4" />
+                <Icon name={Icons.pompier.feu} size="sm" className="mr-2" />
                 Créer une FMPA
               </Button>
               <Button className="w-full justify-start" variant="outline">
-                <MessageSquare className="mr-2 h-4 w-4" />
+                <Icon name={Icons.nav.messages} size="sm" className="mr-2" />
                 Nouveau message
               </Button>
               <Button className="w-full justify-start" variant="outline">
-                <GraduationCap className="mr-2 h-4 w-4" />
+                <Icon name={Icons.nav.formations} size="sm" className="mr-2" />
                 Créer une formation
               </Button>
               <Button className="w-full justify-start" variant="outline">
-                <Users className="mr-2 h-4 w-4" />
+                <Icon name={Icons.nav.personnel} size="sm" className="mr-2" />
                 Gérer le personnel
               </Button>
             </div>

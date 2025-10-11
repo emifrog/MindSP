@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, User, LogOut } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
+import { Icon } from "@/components/ui/icon";
+import { Icons } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -96,7 +97,7 @@ export function Header() {
               className="text-destructive"
               onClick={handleSignOut}
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <Icon name={Icons.ui.logout} size="sm" className="mr-2" />
               Déconnexion
             </DropdownMenuItem>
           </DropdownMenuContent>

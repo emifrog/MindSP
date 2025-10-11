@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,9 +71,15 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="mb-4 flex justify-center">
-            <span className="text-6xl">🚒</span>
+            <Image
+              src="/logo-banner.png"
+              alt="MindSP Logo"
+              width={120}
+              height={120}
+              priority
+              className="h-auto w-auto"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">MindSP</CardTitle>
           <CardDescription>Connectez-vous à votre espace SDIS</CardDescription>
         </CardHeader>
         <CardContent>
