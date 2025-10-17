@@ -50,6 +50,12 @@ export const ActionIcons = {
   copy: "fluent-emoji:clipboard",
   refresh: "fluent-emoji:counterclockwise-arrows-button",
   more: "fluent-emoji:three-dots",
+  file: "fluent-emoji:file-folder",
+  send: "fluent-emoji:rocket",
+  settings: "fluent-emoji:gear",
+  reply: "fluent-emoji:left-arrow-curving-right",
+  forward: "fluent-emoji:right-arrow-curving-left",
+  check: "fluent-emoji:check-mark",
 } as const;
 
 // ===== INFORMATIONS (Colorés) =====

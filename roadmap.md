@@ -1,16 +1,17 @@
 ### Checklist Complète par Phase - Projet MindSP
 
-_Dernière mise à jour : 09 Octobre 2025_
+_Dernière mise à jour : 13 Octobre 2025_
 
-**Progression Globale : ~75% (6.75/9 phases)**
+**Progression Globale : ~85% (7.65/9 phases)**
 
 - ✅ Phase 0 : 100% - Initialisation
 - ✅ Phase 1 : 100% - Foundation
 - ✅ Phase 2 : 90% - Auth & Multi-tenancy
 - ✅ Phase 3 : 100% - Module FMPA
 - ✅ Phase 4 : 100% - Messagerie & Temps Réel
+- ✅ Phase 4.5 : 100% - Chat & Mailbox (NOUVEAU)
 - ⏭️ Phase 5 : 0% - PWA & Offline (Sautée)
-- ✅ Phase 6 : 75% - Modules Complémentaires (3/4 modules)
+- ✅ Phase 6 : 85% - Modules Complémentaires (3.4/4 modules)
 - 🟡 Phase 7 : 0% - Déploiement
 - 🟡 Phase 8 : 0% - Tests & Qualité
 - 🟡 Phase 9 : 0% - Documentation
@@ -215,6 +216,89 @@ _Dernière mise à jour : 09 Octobre 2025_
 
 ---
 
+## ✅ PHASE 4.5 : CHAT & MAILBOX (100% ✅)
+
+### Chat Temps Réel (100% ✅)
+
+- [x] Schema Prisma complet (ChatChannel, ChatMessage, ChatReaction, ChatAttachment, ChatMention, UserPresence)
+- [x] 4 enums (ChannelType, ChannelRole, ChatMessageType, PresenceStatus)
+- [x] Serveur WebSocket Socket.IO configuré
+- [x] Client Socket.IO avec reconnexion auto
+- [x] API routes (channels, messages)
+- [x] Hooks React (useChatSocket, useChatChannel, useChatPresence)
+- [x] Composants UI (ChatLayout, ChannelList, MessageList, Message, MessageInput, TypingIndicator, ChannelHeader)
+- [x] Page /chat fonctionnelle
+- [x] Canaux publics/privés/directs
+- [x] Messages temps réel
+- [x] Typing indicators
+- [x] Présence en ligne (ONLINE, AWAY, BUSY, OFFLINE)
+- [x] Réactions emoji (structure)
+- [x] Édition/Suppression messages
+- [x] Pièces jointes (structure)
+- [x] Mentions @user (structure)
+- [x] Threads (structure)
+- [x] Dialog création de canal avec validation
+- [x] UI moderne avec animations
+- [x] Intégration notifications push
+
+### Mailbox Email Interne (100% ✅)
+
+- [x] Schema Prisma complet (MailMessage, MailRecipient, MailAttachment, MailLabel)
+- [x] 3 enums (RecipientType, MailFolder)
+- [x] API routes (inbox, messages, stats)
+- [x] Types TypeScript complets
+- [x] Composants UI (MailboxLayout, FolderList, MessageList, MessageView)
+- [x] Page /mailbox fonctionnelle
+- [x] Envoyer/Lire/Supprimer messages
+- [x] Destinataires multiples (TO, CC, BCC)
+- [x] Brouillons auto-sauvegardés
+- [x] 5 dossiers (INBOX, SENT, DRAFTS, ARCHIVE, TRASH)
+- [x] Messages étoilés
+- [x] Messages importants
+- [x] Marquer lu/non lu
+- [x] Pièces jointes (structure)
+- [x] Labels personnalisés (structure)
+- [x] Statistiques (6 compteurs)
+- [x] Intégration notifications push
+
+### Système Notifications Push (100% ✅)
+
+- [x] Schema Prisma amélioré (8 nouveaux champs)
+- [x] 10+ types de notifications (Chat, Mail, FMPA, Formation, Événement)
+- [x] Enum NotificationPriority (LOW, NORMAL, HIGH, URGENT)
+- [x] Service NotificationService centralisé
+- [x] API routes complètes (GET, POST, PATCH, DELETE, stats)
+- [x] Types TypeScript avec constantes (NOTIFICATION_ICONS, PRIORITY_COLORS)
+- [x] Hook useNotifications amélioré
+- [x] Composant NotificationBell amélioré
+- [x] Page /notifications complète avec filtres
+- [x] Groupement temporel (Aujourd'hui, Hier, Cette semaine, etc.)
+- [x] Web Push API service complet
+- [x] Intégration Chat (messages + mentions)
+- [x] Intégration Mailbox (nouveaux mails + importants)
+- [x] Notifications navigateur (structure)
+- [x] Actions personnalisées par notification
+
+### Intégration Sidebar (100% ✅)
+
+- [x] Chat ajouté à la navigation (💬)
+- [x] Mailbox ajoutée à la navigation (📧)
+- [x] Ancien "Messages" supprimé
+
+**Status : 100% ✅ - Chat, Mailbox et Notifications COMPLETS !**
+
+**Statistiques Phase 4.5** :
+
+- 28 fichiers créés
+- ~3,400 lignes de code
+- 11 modèles Prisma
+- 18 tables en base
+- 11 composants UI
+- 7 API routes
+- 2 pages fonctionnelles
+
+---
+
 ## 🟡 PHASE 5 : PWA & OFFLINE (0% 🔄)
 
 ### Configuration PWA
@@ -253,7 +337,7 @@ _Dernière mise à jour : 09 Octobre 2025_
 
 ---
 
-## ✅ PHASE 6 : MODULES COMPLÉMENTAIRES (75% ✅)
+## ✅ PHASE 6 : MODULES COMPLÉMENTAIRES (85% ✅)
 
 ### Module Agenda (100% ✅)
 
@@ -291,16 +375,22 @@ _Dernière mise à jour : 09 Octobre 2025_
 - [x] API complète (4 routes)
 - [x] Pages (3) : saisie, validation, export
 
-### Module Portails (0% 🔄)
+### Module Portails (100% ✅)
 
-- [ ] Portail SDIS
-- [ ] Portails spécialités
-- [ ] CMS gestion contenu
-- [ ] Système actualités
-- [ ] Base documentaire
-- [ ] Upload fichiers
+- [x] Modèles Prisma (Portal, PortalPage, NewsArticle, PortalDocument)
+- [x] API Portails (GET, POST, PATCH, DELETE)
+- [x] API Actualités (liste, création, filtres)
+- [x] API Documents (liste, upload, téléchargement)
+- [x] Page Portails avec stats et navigation
+- [x] Page Actualités avec filtres par catégorie
+- [x] Page Documents avec recherche et filtres
+- [x] Système de catégories (7 catégories news, 7 catégories docs)
+- [x] Gestion permissions et visibilité
+- [x] Compteurs (vues, téléchargements)
+- [x] Migration base de données
+- [x] Navigation sidebar mise à jour
 
-**Status : 75% ✅ - 3/4 modules complets (32 fichiers créés)**
+**Status : 100% ✅ - 4/4 modules complets (Phase 6 terminée ! 🎉)**
 
 ---
 

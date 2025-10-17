@@ -74,8 +74,8 @@ export default function LoginPage() {
             <Image
               src="/logo-banner.png"
               alt="MindSP Logo"
-              width={120}
-              height={120}
+              width={150}
+              height={150}
               priority
               className="h-auto w-auto"
             />

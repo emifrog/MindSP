@@ -12,10 +12,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+import { Icons } from "@/lib/icons";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import Link from "next/link";
+import { NOTIFICATION_ICONS, PRIORITY_COLORS } from "@/types/notification";
+import type {
+  NotificationType,
+  NotificationPriority,
+} from "@/types/notification";
+import { cn } from "@/lib/utils";
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
@@ -27,43 +34,33 @@ export function NotificationBell() {
     setOpen(false);
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "MESSAGE":
-        return "💬";
-      case "FMPA_INVITATION":
-        return "📅";
-      case "FMPA_REMINDER":
-        return "⏰";
-      case "FMPA_CANCELLED":
-        return "❌";
-      case "PARTICIPATION_APPROVED":
-        return "✅";
-      case "PARTICIPATION_REJECTED":
-        return "⛔";
-      default:
-        return "🔔";
-    }
+  const getNotificationIcon = (type: NotificationType, customIcon?: string) => {
+    if (customIcon) return customIcon;
+    return NOTIFICATION_ICONS[type] || "fluent-emoji:bell";
+  };
+
+  const getPriorityColor = (priority: NotificationPriority) => {
+    return PRIORITY_COLORS[priority] || "text-foreground";
   };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+          <Icon name={Icons.nav.notifications} size="md" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs"
+              className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-96">
         <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notifications</span>
+          <span className="font-semibold">Notifications</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -71,51 +68,90 @@ export function NotificationBell() {
               onClick={markAllAsRead}
               className="h-auto p-1 text-xs"
             >
-              <CheckCheck className="mr-1 h-3 w-3" />
-              Tout marquer comme lu
+              <Icon name={Icons.action.check} size="sm" className="mr-1" />
+              Tout marquer lu
             </Button>
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         {notifications.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            Aucune notification
+          <div className="py-12 text-center">
+            <Icon
+              name="fluent-emoji:bell"
+              size="2xl"
+              className="mx-auto mb-2 opacity-50"
+            />
+            <p className="text-sm text-muted-foreground">Aucune notification</p>
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.slice(0, 10).map((notification) => (
+          <div className="max-h-[500px] overflow-y-auto">
+            {notifications.slice(0, 10).map((notification: any) => (
               <DropdownMenuItem
                 key={notification.id}
-                className="cursor-pointer"
+                className="cursor-pointer p-0"
                 onClick={() => handleNotificationClick(notification.id)}
                 asChild
               >
                 <Link
                   href={notification.linkUrl || "#"}
-                  className={`flex gap-3 p-3 ${
-                    !notification.read ? "bg-blue-50" : ""
-                  }`}
+                  className={cn(
+                    "flex gap-3 p-3 transition-colors hover:bg-accent",
+                    !notification.read && "bg-accent/50"
+                  )}
                 >
-                  <span className="text-xl">
-                    {getNotificationIcon(notification.type)}
-                  </span>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {notification.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="mt-0.5 shrink-0">
+                    <Icon
+                      name={getNotificationIcon(
+                        notification.type,
+                        notification.icon
+                      )}
+                      size="lg"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p
+                        className={cn(
+                          "text-sm font-medium leading-tight",
+                          getPriorityColor(notification.priority)
+                        )}
+                      >
+                        {notification.title}
+                      </p>
+                      {notification.priority === "URGENT" && (
+                        <Badge
+                          variant="destructive"
+                          className="shrink-0 text-xs"
+                        >
+                          Urgent
+                        </Badge>
+                      )}
+                      {notification.priority === "HIGH" && (
+                        <Badge variant="secondary" className="shrink-0 text-xs">
+                          Important
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(notification.createdAt), {
-                        addSuffix: true,
-                        locale: fr,
-                      })}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(notification.createdAt), {
+                          addSuffix: true,
+                          locale: fr,
+                        })}
+                      </p>
+                      {notification.actionLabel && (
+                        <span className="text-xs font-medium text-primary">
+                          {notification.actionLabel} →
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {!notification.read && (
-                    <div className="h-2 w-2 rounded-full bg-blue-600" />
+                    <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
                   )}
                 </Link>
               </DropdownMenuItem>
@@ -129,9 +165,9 @@ export function NotificationBell() {
             <DropdownMenuItem asChild>
               <Link
                 href="/notifications"
-                className="w-full text-center text-sm text-primary"
+                className="w-full py-2 text-center text-sm font-medium text-primary"
               >
-                Voir toutes les notifications
+                Voir toutes les notifications ({notifications.length})
               </Link>
             </DropdownMenuItem>
           </>

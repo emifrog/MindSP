@@ -2,68 +2,64 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, List, Grid } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
+import { Icons } from "@/lib/icons";
+import { MonthCalendar } from "@/components/calendar/MonthCalendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { CalendarEvent } from "@/types/calendar";
 import Link from "next/link";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  description: string | null;
-  startDate: string;
-  endDate: string;
-  type: string;
-  color: string | null;
-  location: string | null;
-  creator: {
-    firstName: string;
-    lastName: string;
-  };
-  participants: Array<{
-    status: string;
-    user: {
-      firstName: string;
-      lastName: string;
-    };
-  }>;
-}
 
 export default function AgendaPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<"month" | "list">("month");
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null
+  );
+  const [showEventDialog, setShowEventDialog] = useState(false);
 
   useEffect(() => {
     fetchEvents();
-  }, [currentDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
+      const response = await fetch(`/api/calendar/events`);
 
-      const response = await fetch(
-        `/api/calendar/events?start=${start.toISOString()}&end=${end.toISOString()}`
-      );
+      if (!response.ok) throw new Error("Erreur de chargement");
+
       const data = await response.json();
 
-      if (response.ok) {
-        setEvents(data.events);
-      }
+      // Convertir les dates string en Date objects et ajouter les couleurs
+      const eventsWithDates = data.events.map((event: any) => ({
+        ...event,
+        startDate: new Date(event.startDate),
+        endDate: new Date(event.endDate),
+        color: getEventColor(event.type),
+      }));
+
+      setEvents(eventsWithDates);
     } catch (error) {
       console.error("Erreur chargement événements:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les événements",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -71,13 +67,13 @@ export default function AgendaPage() {
 
   const getEventColor = (type: string) => {
     const colors: Record<string, string> = {
-      FMPA: "bg-blue-500",
-      FORMATION: "bg-green-500",
-      MEETING: "bg-purple-500",
-      INTERVENTION: "bg-red-500",
-      GARDE: "bg-orange-500",
-      ASTREINTE: "bg-yellow-500",
-      OTHER: "bg-gray-500",
+      FMPA: "#3b82f6",
+      FORMATION: "#10b981",
+      MEETING: "#a855f7",
+      INTERVENTION: "#ef4444",
+      GARDE: "#f97316",
+      ASTREINTE: "#eab308",
+      OTHER: "#6b7280",
     };
     return colors[type] || colors.OTHER;
   };
@@ -95,183 +91,166 @@ export default function AgendaPage() {
     return labels[type] || type;
   };
 
+  const handleEventClick = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setShowEventDialog(true);
+  };
+
+  const handleDateClick = (date: Date) => {
+    // Ouvrir formulaire de création d'événement avec date pré-remplie
+    console.log("Date clicked:", date);
+  };
+
+  const handleAddEvent = () => {
+    // Rediriger vers formulaire de création
+    window.location.href = "/agenda/nouveau";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Icon name={Icons.ui.menu} size="2xl" className="animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Agenda</h1>
+          <h1 className="flex items-center gap-3 text-3xl font-bold">
+            <Icon name={Icons.nav.calendar} size="xl" />
+            Agenda
+          </h1>
           <p className="text-muted-foreground">
             Gérez votre planning et vos disponibilités
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/agenda/disponibilites">
-              <Calendar className="mr-2 h-4 w-4" />
-              Mes disponibilités
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/agenda/nouveau">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvel événement
-            </Link>
-          </Button>
-        </div>
+        <Button variant="outline" asChild>
+          <Link href="/agenda/disponibilites">
+            <Icon name={Icons.info.date} size="sm" className="mr-2" />
+            Mes disponibilités
+          </Link>
+        </Button>
       </div>
 
-      {/* Navigation mois */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setCurrentDate(
-                    new Date(currentDate.setMonth(currentDate.getMonth() - 1))
-                  )
-                }
-              >
-                ← Précédent
-              </Button>
-              <h2 className="text-xl font-semibold">
-                {format(currentDate, "MMMM yyyy", { locale: fr })}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setCurrentDate(
-                    new Date(currentDate.setMonth(currentDate.getMonth() + 1))
-                  )
-                }
-              >
-                Suivant →
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentDate(new Date())}
-              >
-                Aujourd&apos;hui
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={view === "month" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setView("month")}
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={view === "list" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setView("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      {/* Calendar */}
+      <MonthCalendar
+        events={events}
+        onEventClick={handleEventClick}
+        onDateClick={handleDateClick}
+        onAddEvent={handleAddEvent}
+      />
 
-      {/* Liste des événements */}
-      {loading ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Chargement...</p>
-          </CardContent>
-        </Card>
-      ) : events.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Aucun événement</h3>
-            <p className="text-muted-foreground">
-              Aucun événement prévu pour ce mois
-            </p>
-            <Button className="mt-4" asChild>
-              <Link href="/agenda/nouveau">
-                <Plus className="mr-2 h-4 w-4" />
-                Créer un événement
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {events.map((event) => (
-            <Card key={event.id} className="cursor-pointer hover:shadow-lg">
-              <CardHeader>
+      {/* Event Dialog */}
+      <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+        <DialogContent className="max-w-2xl">
+          {selectedEvent && (
+            <>
+              <DialogHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`mt-1 h-3 w-3 rounded-full ${getEventColor(
-                        event.type
-                      )}`}
-                    />
-                    <div>
-                      <CardTitle>{event.title}</CardTitle>
-                      <CardDescription>
-                        {format(new Date(event.startDate), "PPP à HH:mm", {
-                          locale: fr,
-                        })}
-                        {" - "}
-                        {format(new Date(event.endDate), "HH:mm", {
-                          locale: fr,
-                        })}
-                      </CardDescription>
+                  <div>
+                    <DialogTitle className="text-2xl">
+                      {selectedEvent.title}
+                    </DialogTitle>
+                    <DialogDescription className="mt-2">
+                      <div className="flex items-center gap-2">
+                        <Icon name={Icons.info.date} size="sm" />
+                        <span>
+                          {format(selectedEvent.startDate, "PPP à HH:mm", {
+                            locale: fr,
+                          })}
+                          {" - "}
+                          {format(selectedEvent.endDate, "HH:mm", {
+                            locale: fr,
+                          })}
+                        </span>
+                      </div>
+                    </DialogDescription>
+                  </div>
+                  <Badge
+                    style={{
+                      backgroundColor: `${selectedEvent.color}20`,
+                      color: selectedEvent.color,
+                      borderColor: selectedEvent.color,
+                    }}
+                    className="border"
+                  >
+                    {getEventTypeLabel(selectedEvent.type)}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <div className="mt-4 space-y-4">
+                {selectedEvent.description && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium">Description</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedEvent.description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedEvent.location && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium">Lieu</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Icon name={Icons.info.location} size="sm" />
+                      <span>{selectedEvent.location}</span>
                     </div>
                   </div>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                    {getEventTypeLabel(event.type)}
-                  </span>
+                )}
+
+                <div>
+                  <h3 className="mb-2 text-sm font-medium">Organisateur</h3>
+                  <div className="flex items-center gap-2">
+                    <Icon name={Icons.info.user} size="sm" />
+                    <span className="text-sm">
+                      {selectedEvent.creator.firstName}{" "}
+                      {selectedEvent.creator.lastName}
+                    </span>
+                  </div>
                 </div>
-              </CardHeader>
-              {(event.description || event.location) && (
-                <CardContent>
-                  {event.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {event.description}
-                    </p>
-                  )}
-                  {event.location && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      📍 {event.location}
-                    </p>
-                  )}
-                  {event.participants.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Participants ({event.participants.length})
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {event.participants.slice(0, 5).map((p, i) => (
-                          <span
-                            key={i}
-                            className="rounded-full bg-secondary px-2 py-1 text-xs"
-                          >
-                            {p.user.firstName} {p.user.lastName}
-                          </span>
-                        ))}
-                        {event.participants.length > 5 && (
-                          <span className="rounded-full bg-secondary px-2 py-1 text-xs">
-                            +{event.participants.length - 5}
-                          </span>
-                        )}
-                      </div>
+
+                {selectedEvent.participants.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium">
+                      Participants ({selectedEvent.participants.length})
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedEvent.participants.map((p, i) => (
+                        <Badge key={i} variant="secondary">
+                          {p.user.firstName} {p.user.lastName}
+                        </Badge>
+                      ))}
                     </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <Button asChild className="flex-1">
+                    <Link href={`/agenda/${selectedEvent.id}`}>
+                      <Icon name={Icons.ui.eye} size="sm" className="mr-2" />
+                      Voir les détails
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href={`/agenda/${selectedEvent.id}/edit`}>
+                      <Icon
+                        name={Icons.action.edit}
+                        size="sm"
+                        className="mr-2"
+                      />
+                      Modifier
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

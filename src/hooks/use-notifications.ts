@@ -67,12 +67,9 @@ export function useNotifications() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch(
-        `/api/notifications/${notificationId}/read`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: "PATCH",
+      });
 
       if (response.ok) {
         setNotifications((prev) =>
@@ -87,7 +84,7 @@ export function useNotifications() {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch("/api/notifications/read-all", {
+      const response = await fetch("/api/notifications", {
         method: "POST",
       });
 
@@ -100,12 +97,35 @@ export function useNotifications() {
     }
   };
 
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+        setUnreadCount((prev) => {
+          const notification = notifications.find(
+            (n) => n.id === notificationId
+          );
+          return notification && !notification.read
+            ? Math.max(0, prev - 1)
+            : prev;
+        });
+      }
+    } catch (error) {
+      console.error("Erreur suppression notification:", error);
+    }
+  };
+
   return {
     notifications,
     unreadCount,
     loading,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     refresh: fetchNotifications,
   };
 }

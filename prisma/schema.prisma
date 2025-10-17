@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -42,6 +42,11 @@ model Tenant {
   formationRegistrations FormationRegistration[]
   ttaEntries TTAEntry[]
   ttaExports TTAExport[]
+  portals     Portal[]
+  newsArticles NewsArticle[]
+  portalDocuments PortalDocument[]
+  chatChannels ChatChannel[]
+  mailMessages MailMessage[]
   
   @@index([slug])
   @@index([domain])
@@ -96,6 +101,7 @@ model User {
   // Messaging
   sentMessages  Message[] @relation("MessageSender")
   conversationMembers ConversationMember[]
+  messageReads  MessageRead[] @relation("MessageReads")
   
   // Formations
   formationsCreated Formation[] @relation("FormationCreator")
@@ -119,6 +125,23 @@ model User {
   ttaEntries TTAEntry[]
   ttaValidations TTAEntry[] @relation("TTAValidator")
   ttaExportsCreated TTAExport[]
+  
+  // Portails & CMS
+  newsArticles NewsArticle[] @relation("NewsAuthor")
+  portalDocuments PortalDocument[] @relation("PortalDocumentUploader")
+  
+  // Chat Temps Réel
+  chatChannelsCreated ChatChannel[] @relation("ChannelCreator")
+  chatMemberships ChatChannelMember[] @relation("ChatMemberships")
+  chatMessages ChatMessage[] @relation("ChatMessages")
+  chatReactions ChatReaction[] @relation("ChatReactions")
+  chatMentions ChatMention[] @relation("ChatMentions")
+  presence UserPresence?
+  
+  // Mailbox
+  sentMails MailMessage[] @relation("SentMails")
+  receivedMails MailRecipient[] @relation("ReceivedMails")
+  mailLabels MailLabel[] @relation("MailLabels")
   
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -372,9 +395,11 @@ model MessageRead {
   readAt    DateTime @default(now())
   
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation("MessageReads", fields: [userId], references: [id], onDelete: Cascade)
   
   @@unique([messageId, userId])
   @@index([messageId])
+  @@index([userId])
   @@map("message_reads")
 }
 
@@ -639,6 +664,7 @@ model Notification {
   type        NotificationType
   title       String
   message     String   @db.Text
+  icon        String?  // Icône ou emoji
   
   // Link
   linkUrl     String?
@@ -647,7 +673,19 @@ model Notification {
   read        Boolean  @default(false)
   readAt      DateTime?
   
+  // Priority & Actions
+  priority    NotificationPriority @default(NORMAL)
+  actionLabel String?  // Label du bouton d'action
+  actionUrl   String?  // URL de l'action
+  
+  // Push Notification
+  pushSent    Boolean  @default(false)
+  pushSentAt  DateTime?
+  
   // Metadata
+  metadata    Json?    // Données supplémentaires
+  expiresAt   DateTime? // Date d'expiration
+  
   createdAt   DateTime @default(now())
   
   // Relations
@@ -658,19 +696,48 @@ model Notification {
   @@index([userId])
   @@index([read])
   @@index([createdAt])
+  @@index([priority])
+  @@index([expiresAt])
   @@map("notifications")
 }
 
 enum NotificationType {
+  // FMPA
   FMPA_CREATED
   FMPA_UPDATED
   FMPA_CANCELLED
   FMPA_REMINDER
-  MESSAGE_RECEIVED
+  
+  // Chat
+  CHAT_MESSAGE
+  CHAT_MENTION
+  CHAT_REACTION
+  CHAT_CHANNEL_INVITE
+  
+  // Mailbox
+  MAIL_RECEIVED
+  MAIL_IMPORTANT
+  
+  // Formation
   FORMATION_APPROVED
   FORMATION_REJECTED
+  FORMATION_REMINDER
+  
+  // Événements
   EVENT_INVITATION
+  EVENT_REMINDER
+  EVENT_UPDATED
+  
+  // Système
   SYSTEM
+  ANNOUNCEMENT
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 // ================================
@@ -937,5 +1004,472 @@ enum ExportFormat {
   CSV
   EXCEL
   PDF
+}
+
+// ================================
+// MODULE PORTAILS & CMS
+// ================================
+
+model Portal {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // Configuration
+  slug        String   // sdis, sap, fdf, etc.
+  name        String
+  description String?  @db.Text
+  icon        String?
+  color       String?  @default("#1e40af")
+  
+  // Visibilité
+  isPublic    Boolean  @default(false)
+  requiresAuth Boolean @default(true)
+  
+  // Ordre
+  order       Int      @default(0)
+  
+  // Status
+  status      PortalStatus @default(DRAFT)
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pages       PortalPage[]
+  news        NewsArticle[]
+  
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([status])
+  @@map("portals")
+}
+
+enum PortalStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model PortalPage {
+  id          String   @id @default(uuid())
+  portalId    String
+  
+  // Content
+  slug        String
+  title       String
+  content     String   @db.Text
+  excerpt     String?  @db.Text
+  
+  // SEO
+  metaTitle   String?
+  metaDescription String?
+  
+  // Layout
+  template    PageTemplate @default(STANDARD)
+  order       Int      @default(0)
+  
+  // Visibilité
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  portal      Portal   @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  
+  @@unique([portalId, slug])
+  @@index([portalId])
+  @@index([isPublished])
+  @@map("portal_pages")
+}
+
+enum PageTemplate {
+  STANDARD
+  FULL_WIDTH
+  SIDEBAR_LEFT
+  SIDEBAR_RIGHT
+  LANDING
+}
+
+model NewsArticle {
+  id          String   @id @default(uuid())
+  tenantId    String
+  portalId    String?
+  
+  // Content
+  title       String
+  slug        String
+  content     String   @db.Text
+  excerpt     String?  @db.Text
+  
+  // Media
+  coverImage  String?
+  images      Json?    // Array of image URLs
+  
+  // Catégorie
+  category    NewsCategory @default(GENERAL)
+  tags        String[]
+  
+  // Auteur
+  authorId    String
+  
+  // Visibilité
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  isPinned    Boolean  @default(false)
+  
+  // Stats
+  viewCount   Int      @default(0)
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  portal      Portal?  @relation(fields: [portalId], references: [id], onDelete: SetNull)
+  author      User     @relation("NewsAuthor", fields: [authorId], references: [id])
+  
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([portalId])
+  @@index([category])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@map("news_articles")
+}
+
+enum NewsCategory {
+  GENERAL
+  FORMATION
+  INTERVENTION
+  PREVENTION
+  MATERIEL
+  EVENEMENT
+  ADMINISTRATIF
+}
+
+model PortalDocument {
+  id          String   @id @default(uuid())
+  tenantId    String
+  
+  // File info
+  name        String
+  fileName    String
+  fileUrl     String
+  fileSize    Int      // en bytes
+  mimeType    String
+  
+  // Classification
+  category    PortalDocumentCategory
+  tags        String[]
+  
+  // Description
+  description String?  @db.Text
+  
+  // Visibilité
+  isPublic    Boolean  @default(false)
+  requiresAuth Boolean @default(true)
+  
+  // Permissions
+  allowedRoles String[] // Array of UserRole
+  
+  // Uploader
+  uploadedById String
+  
+  // Stats
+  downloadCount Int    @default(0)
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  uploadedBy  User     @relation("PortalDocumentUploader", fields: [uploadedById], references: [id])
+  
+  @@index([tenantId])
+  @@index([category])
+  @@index([isPublic])
+  @@map("portal_documents")
+}
+
+enum PortalDocumentCategory {
+  PROCEDURE
+  FORMATION
+  TECHNIQUE
+  ADMINISTRATIF
+  SECURITE
+  MATERIEL
+  AUTRE
+}
+
+// ================================
+// CHAT TEMPS RÉEL
+// ================================
+
+// Canaux de discussion
+model ChatChannel {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  type        ChannelType @default(PUBLIC)
+  icon        String?  // Emoji ou nom d'icône
+  color       String?  // Couleur du canal
+  tenantId    String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("ChannelCreator", fields: [createdById], references: [id])
+  
+  members     ChatChannelMember[]
+  messages    ChatMessage[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("chat_channels")
+}
+
+enum ChannelType {
+  PUBLIC      // Visible par tous
+  PRIVATE     // Sur invitation
+  DIRECT      // Conversation 1-to-1
+}
+
+// Membres d'un canal
+model ChatChannelMember {
+  id          String   @id @default(uuid())
+  channelId   String
+  userId      String
+  role        ChannelRole @default(MEMBER)
+  joinedAt    DateTime @default(now())
+  lastReadAt  DateTime?
+  isMuted     Boolean  @default(false)
+  isPinned    Boolean  @default(false)
+  
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user        User        @relation("ChatMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@index([lastReadAt])
+  @@map("chat_channel_members")
+}
+
+enum ChannelRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+// Messages du chat
+model ChatMessage {
+  id          String   @id @default(uuid())
+  channelId   String
+  userId      String
+  content     String   @db.Text
+  type        ChatMessageType @default(TEXT)
+  parentId    String?  // Pour les threads
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user        User        @relation("ChatMessages", fields: [userId], references: [id])
+  parent      ChatMessage? @relation("MessageThread", fields: [parentId], references: [id])
+  replies     ChatMessage[] @relation("MessageThread")
+  
+  reactions   ChatReaction[]
+  attachments ChatAttachment[]
+  mentions    ChatMention[]
+  
+  @@index([channelId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM  // Messages système (X a rejoint, etc.)
+}
+
+// Réactions aux messages
+model ChatReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatReactions", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("chat_reactions")
+}
+
+// Pièces jointes du chat
+model ChatAttachment {
+  id        String   @id @default(uuid())
+  messageId String
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime @default(now())
+  
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+  @@map("chat_attachments")
+}
+
+// Mentions dans les messages
+model ChatMention {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ChatMentions", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@map("chat_mentions")
+}
+
+// Statut de présence
+model UserPresence {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  status    PresenceStatus @default(OFFLINE)
+  customStatus String?
+  lastSeen  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_presence")
+}
+
+enum PresenceStatus {
+  ONLINE
+  AWAY
+  BUSY
+  OFFLINE
+}
+
+// ================================
+// MAILBOX (EMAIL INTERNE)
+// ================================
+
+// Messages email internes
+model MailMessage {
+  id          String   @id @default(uuid())
+  subject     String
+  body        String   @db.Text
+  fromId      String
+  tenantId    String
+  isDraft     Boolean  @default(false)
+  isImportant Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  from        User     @relation("SentMails", fields: [fromId], references: [id])
+  
+  recipients  MailRecipient[]
+  attachments MailAttachment[]
+  labels      MailLabel[]
+  
+  @@index([tenantId])
+  @@index([fromId])
+  @@index([createdAt])
+  @@index([isDraft])
+  @@map("mail_messages")
+}
+
+// Destinataires des emails
+model MailRecipient {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  type      RecipientType
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  folder    MailFolder @default(INBOX)
+  isArchived Boolean @default(false)
+  isStarred Boolean  @default(false)
+  deletedAt DateTime?
+  
+  message   MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("ReceivedMails", fields: [userId], references: [id])
+  
+  @@unique([messageId, userId, type])
+  @@index([userId])
+  @@index([folder])
+  @@index([isRead])
+  @@map("mail_recipients")
+}
+
+enum RecipientType {
+  TO
+  CC
+  BCC
+}
+
+enum MailFolder {
+  INBOX
+  SENT
+  DRAFTS
+  ARCHIVE
+  TRASH
+}
+
+// Pièces jointes email
+model MailAttachment {
+  id        String   @id @default(uuid())
+  messageId String
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime @default(now())
+  
+  message   MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+  @@map("mail_attachments")
+}
+
+// Labels/Tags pour emails
+model MailLabel {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  name      String
+  color     String
+  
+  message   MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation("MailLabels", fields: [userId], references: [id])
+  
+  @@unique([messageId, userId, name])
+  @@index([userId])
+  @@map("mail_labels")
 }
 

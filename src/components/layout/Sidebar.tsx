@@ -9,10 +9,13 @@ const navigation = [
   { name: "Tableau de bord", href: "/", icon: Icons.nav.dashboard },
   { name: "FMPA", href: "/fmpa", icon: Icons.pompier.feu },
   { name: "Agenda", href: "/agenda", icon: Icons.nav.calendar },
-  { name: "Messages", href: "/messages", icon: Icons.nav.messages },
+  { name: "Chat", href: "/chat", icon: "fluent-emoji:speech-balloon" },
+  { name: "Mailbox", href: "/mailbox", icon: "fluent-emoji:incoming-envelope" },
   { name: "Formations", href: "/formations", icon: Icons.nav.formations },
   { name: "TTA", href: "/tta", icon: Icons.nav.tta },
   { name: "Personnel", href: "/personnel", icon: Icons.nav.personnel },
+  { name: "Portails", href: "/portails", icon: "fluent-emoji:door" },
+  { name: "Actualités", href: "/actualites", icon: Icons.info.info },
   { name: "Documents", href: "/documents", icon: Icons.nav.documents },
   { name: "Design", href: "/showcase", icon: "fluent-emoji:artist-palette" },
   { name: "Paramètres", href: "/settings", icon: Icons.nav.settings },
@@ -62,8 +65,8 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
-          <p>Version 0.4.0</p>
-          <p>Phase 4 - Messagerie & Temps Réel</p>
+          <p>Version 0.6.0</p>
+          <p>Phase 6 - Portails & CMS</p>
         </div>
       </div>
     </div>
