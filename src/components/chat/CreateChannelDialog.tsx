@@ -85,7 +85,7 @@ export function CreateChannelDialog({
   };
 
   const iconOptions = [
-    { value: "", label: "Aucune icône" },
+    { value: "none", label: "Aucune icône" },
     { value: "fluent-emoji:speech-balloon", label: "💬 Bulle" },
     { value: "fluent-emoji:fire", label: "🔥 Feu" },
     { value: "fluent-emoji:rocket", label: "🚀 Fusée" },
@@ -197,9 +197,12 @@ export function CreateChannelDialog({
             <div className="space-y-2">
               <Label htmlFor="icon">Icône (optionnel)</Label>
               <Select
-                value={formData.icon}
+                value={formData.icon || undefined}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, icon: value })
+                  setFormData({
+                    ...formData,
+                    icon: value === "none" ? "" : value,
+                  })
                 }
               >
                 <SelectTrigger>

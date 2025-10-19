@@ -400,7 +400,7 @@ export default function TTAPage() {
                 <Button type="submit" disabled={submitting}>
                   {submitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
                       Enregistrement...
                     </>
                   ) : (

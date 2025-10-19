@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Icons.nav.dashboard },
+  {
+    name: "Recherche",
+    href: "/search",
+    icon: "fluent-emoji:magnifying-glass-tilted-left",
+  },
   { name: "FMPA", href: "/fmpa", icon: Icons.pompier.feu },
   { name: "Agenda", href: "/agenda", icon: Icons.nav.calendar },
   { name: "Chat", href: "/chat", icon: "fluent-emoji:speech-balloon" },
@@ -55,7 +60,7 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <Icon name={item.icon} size="md" />
+              <Icon name={item.icon} size="lg" />
               {item.name}
             </Link>
           );
@@ -65,8 +70,8 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
-          <p>Version 0.6.0</p>
-          <p>Phase 6 - Portails & CMS</p>
+          <p>Version 1.0.0</p>
+          <p>Phase 7 - CI/CD & DevOps</p>
         </div>
       </div>
     </div>

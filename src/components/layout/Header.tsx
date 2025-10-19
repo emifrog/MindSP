@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function Header() {
   const { data: session } = useSession();
@@ -55,6 +56,9 @@ export function Header() {
       <div className="flex items-center gap-4">
         {/* Notifications */}
         <NotificationBell />
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* User Menu */}
         <DropdownMenu>

@@ -73,14 +73,6 @@ export function FolderList({ currentFolder, onSelectFolder }: FolderListProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Bouton composer */}
-      <div className="border-b p-3">
-        <Button className="w-full">
-          <Icon name={Icons.action.add} size="sm" className="mr-2" />
-          Nouveau message
-        </Button>
-      </div>
-
       {/* Liste des dossiers */}
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-3">

@@ -1,17 +1,18 @@
 ### Checklist Complète par Phase - Projet MindSP
 
-_Dernière mise à jour : 13 Octobre 2025_
+_Dernière mise à jour : 17 Octobre 2025_
 
-**Progression Globale : ~85% (7.65/9 phases)**
+**Progression Globale : ~90% (8.1/9 phases)**
 
 - ✅ Phase 0 : 100% - Initialisation
 - ✅ Phase 1 : 100% - Foundation
 - ✅ Phase 2 : 90% - Auth & Multi-tenancy
 - ✅ Phase 3 : 100% - Module FMPA
 - ✅ Phase 4 : 100% - Messagerie & Temps Réel
-- ✅ Phase 4.5 : 100% - Chat & Mailbox (NOUVEAU)
+- ✅ Phase 4.5 : 100% - Chat & Mailbox
+- ✅ Phase 4.6 : 100% - Upload Fichiers & Recherche (NOUVEAU)
 - ⏭️ Phase 5 : 0% - PWA & Offline (Sautée)
-- ✅ Phase 6 : 85% - Modules Complémentaires (3.4/4 modules)
+- ✅ Phase 6 : 100% - Modules Complémentaires (4/4 modules)
 - 🟡 Phase 7 : 0% - Déploiement
 - 🟡 Phase 8 : 0% - Tests & Qualité
 - 🟡 Phase 9 : 0% - Documentation
@@ -299,6 +300,87 @@ _Dernière mise à jour : 13 Octobre 2025_
 
 ---
 
+## ✅ PHASE 4.6 : UPLOAD FICHIERS & RECHERCHE (100% ✅)
+
+### Système Upload Fichiers UploadThing (100% ✅)
+
+- [x] Configuration UploadThing (core, routes, helpers)
+- [x] 4 endpoints d'upload configurés
+  - [x] Avatar (4MB, 1 fichier, images)
+  - [x] Chat Attachments (16MB, 5 fichiers, tous types)
+  - [x] Mail Attachments (16MB, 10 fichiers, tous types)
+  - [x] Documents (32MB, 20 fichiers, tous types)
+- [x] Composant FileUploadDropzone (drag & drop)
+- [x] Composant FilePreview (prévisualisation par type)
+- [x] Composant FileList (liste scrollable)
+- [x] Composant Progress (barre de progression)
+- [x] Authentification et sécurité (middleware)
+- [x] Validation taille et type de fichiers
+- [x] Toast notifications (succès/erreur)
+- [x] Gestion d'erreur complète
+
+### Intégrations Upload (100% ✅)
+
+- [x] Chat MessageInput avec upload pièces jointes
+  - [x] Popover upload avec FileUploadDropzone
+  - [x] Prévisualisation fichiers attachés
+  - [x] Suppression avant envoi
+  - [x] Format correct (fileName, fileUrl, fileSize, mimeType)
+- [x] Mailbox ComposeEmail avec upload
+  - [x] Dialog composition complet (TO, CC, BCC)
+  - [x] Upload jusqu'à 10 fichiers
+  - [x] Prévisualisation et suppression
+  - [x] Envoi via API
+- [x] Documents UploadDocumentDialog
+  - [x] Upload multiple (jusqu'à 20 fichiers)
+  - [x] 7 catégories (Procédure, Formation, Technique, etc.)
+  - [x] Tags multiples
+  - [x] Métadonnées complètes
+  - [x] Création automatique documents
+
+### Recherche Avancée Globale (100% ✅)
+
+- [x] API recherche `/api/search`
+  - [x] 6 sources de recherche
+  - [x] Recherche Chat (messages, canaux)
+  - [x] Recherche Mailbox (sujet, corps)
+  - [x] Recherche FMPA (titre, description, lieu)
+  - [x] Recherche Formations (titre, description)
+  - [x] Recherche Documents (nom, description)
+  - [x] Recherche Personnel (nom, prénom, email)
+- [x] Filtres avancés
+  - [x] Filtre par type (all, chat, mail, fmpa, etc.)
+  - [x] Filtre par date (dateFrom, dateTo)
+  - [x] Limite résultats configurable
+- [x] Page `/search` complète
+  - [x] Barre de recherche avec icône
+  - [x] Compteur de résultats
+  - [x] 7 onglets (Tous + 6 types)
+  - [x] Affichage par type avec icônes
+  - [x] Date relative (il y a X temps)
+  - [x] Liens directs vers résultats
+  - [x] États vide et loading
+  - [x] ScrollArea pour résultats
+- [x] Intégration sidebar (🔍 Recherche)
+- [x] Recherche insensible à la casse
+- [x] Gestion d'erreur avec try-catch
+- [x] Isolation par tenant
+
+**Status : 100% ✅ - Upload et Recherche COMPLETS !**
+
+**Statistiques Phase 4.6** :
+
+- 9 fichiers créés
+- ~1,700 lignes de code
+- 4 packages installés (uploadthing, @uploadthing/react, react-dropzone, @radix-ui/react-progress)
+- 4 endpoints upload
+- 6 sources de recherche
+- 7 composants UI
+- 2 API routes
+- 1 page fonctionnelle
+
+---
+
 ## 🟡 PHASE 5 : PWA & OFFLINE (0% 🔄)
 
 ### Configuration PWA
@@ -337,7 +419,7 @@ _Dernière mise à jour : 13 Octobre 2025_
 
 ---
 
-## ✅ PHASE 6 : MODULES COMPLÉMENTAIRES (85% ✅)
+## ✅ PHASE 6 : MODULES COMPLÉMENTAIRES (100% ✅)
 
 ### Module Agenda (100% ✅)
 

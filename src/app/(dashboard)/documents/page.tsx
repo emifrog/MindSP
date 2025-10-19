@@ -11,9 +11,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { Icons } from "@/lib/icons";
 import { useToast } from "@/hooks/use-toast";
+import {
+  FileUploadDropzone,
+  type UploadedFile,
+} from "@/components/upload/FileUploadDropzone";
 
 interface PortalDocument {
   id: string;

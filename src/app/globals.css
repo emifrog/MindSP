@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     
-    /* Primary - Bleu vibrant moderne (Sapphire) */
-    --primary: 0 0% 9%;
+    /* Primary - Bleu SDIS #144190 */
+    --primary: 215 75% 32%;
     --primary-foreground: 0 0% 98%;
     
     /* Secondary - Violet doux */
@@ -51,7 +51,7 @@
     /* Borders et inputs */
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --ring: 215 75% 32%;
     
     /* Radius moderne */
     --radius: 0.5rem;
@@ -70,54 +70,54 @@
   }
 
   .dark {
-    /* Dark mode - Palette sombre élégante */
-    --background: 0 0% 3.9%;
+    /* Dark mode - Palette SDIS personnalisée */
+    --background: 215 45% 13%;  /* #111d2d - Background dashboard */
     --foreground: 0 0% 98%;
     
     /* Cards avec subtle elevation */
-    --card: 0 0% 3.9%;
+    --card: 215 37% 16%;  /* #1a2537 - Sidebar */
     --card-foreground: 0 0% 98%;
     
     /* Popover */
-    --popover: 0 0% 3.9%;
+    --popover: 215 37% 16%;
     --popover-foreground: 0 0% 98%;
     
-    /* Primary - Bleu lumineux */
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    /* Primary - Bleu SDIS clair (dark mode) */
+    --primary: 215 75% 45%;
+    --primary-foreground: 0 0% 98%;
     
-    /* Secondary - Violet profond */
-    --secondary: 0 0% 14.9%;
+    /* Secondary - Bleu SDIS plus foncé */
+    --secondary: 215 37% 20%;
     --secondary-foreground: 0 0% 98%;
     
-    /* Muted - Gris ardoise */
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    /* Muted - Gris bleuté */
+    --muted: 215 30% 18%;
+    --muted-foreground: 0 0% 70%;
     
-    /* Accent - Cyan néon */
-    --accent: 0 0% 14.9%;
+    /* Accent - Bleu SDIS accent */
+    --accent: 215 75% 35%;
     --accent-foreground: 0 0% 98%;
     
-    /* Success - Vert néon */
+    /* Success - Vert */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
     
-    /* Warning - Orange vif */
+    /* Warning - Orange */
     --warning: 38 92% 50%;
-    --warning-foreground: 240 10% 3.9%;
+    --warning-foreground: 215 45% 13%;
     
-    /* Destructive - Rouge néon */
+    /* Destructive - Rouge */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    /* Info - Bleu électrique */
+    /* Info - Bleu ciel */
     --info: 199 89% 48%;
-    --info-foreground: 240 10% 3.9%;
+    --info-foreground: 215 45% 13%;
     
     /* Borders et inputs */
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 215 30% 25%;
+    --input: 215 30% 25%;
+    --ring: 215 75% 45%;
     
     /* Shadows pour dark mode */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -237,5 +237,15 @@
   .text-gradient {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  }
+  
+  /* Masquer le loader par défaut de Next.js (emoji gâteau) */
+  #__next-build-watcher {
+    display: none !important;
+  }
+  
+  /* Masquer tous les SVG de loader Next.js par défaut */
+  body > div[style*="position: fixed"] > svg {
+    display: none !important;
   }
 }

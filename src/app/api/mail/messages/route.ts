@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const {
       subject,
       bodyContent,
+      body: bodyText, // Support pour "body" aussi
       to,
       cc,
       bcc,
@@ -24,17 +25,51 @@ export async function POST(request: NextRequest) {
       attachments,
     } = body;
 
+    // Support des deux formats : bodyContent ou body
+    const messageBody = bodyContent || bodyText;
+
     // Validation
-    if (!subject || !bodyContent) {
+    if (!subject || !messageBody) {
       return NextResponse.json(
         { error: "Sujet et contenu requis" },
         { status: 400 }
       );
     }
 
-    if (!isDraft && (!to || to.length === 0)) {
+    // Convertir les emails en IDs si nécessaire
+    const convertEmailsToIds = async (
+      emails: string | string[] | undefined
+    ) => {
+      if (!emails) return [];
+
+      const emailArray =
+        typeof emails === "string"
+          ? emails
+              .split(",")
+              .map((e) => e.trim())
+              .filter((e) => e)
+          : emails;
+
+      if (emailArray.length === 0) return [];
+
+      const users = await prisma.user.findMany({
+        where: {
+          email: { in: emailArray },
+          tenantId: session.user.tenantId,
+        },
+        select: { id: true },
+      });
+
+      return users.map((u) => u.id);
+    };
+
+    const toIds = await convertEmailsToIds(to);
+    const ccIds = await convertEmailsToIds(cc);
+    const bccIds = await convertEmailsToIds(bcc);
+
+    if (!isDraft && toIds.length === 0) {
       return NextResponse.json(
-        { error: "Au moins un destinataire requis" },
+        { error: "Au moins un destinataire valide requis" },
         { status: 400 }
       );
     }
@@ -43,7 +78,7 @@ export async function POST(request: NextRequest) {
     const message = await prisma.mailMessage.create({
       data: {
         subject,
-        body: bodyContent,
+        body: messageBody,
         fromId: session.user.id,
         tenantId: session.user.tenantId,
         isDraft: isDraft || false,
@@ -51,19 +86,19 @@ export async function POST(request: NextRequest) {
         recipients: {
           create: [
             // Destinataires TO
-            ...(to || []).map((userId: string) => ({
+            ...toIds.map((userId: string) => ({
               userId,
               type: "TO" as const,
               folder: "INBOX" as const,
             })),
             // Destinataires CC
-            ...(cc || []).map((userId: string) => ({
+            ...ccIds.map((userId: string) => ({
               userId,
               type: "CC" as const,
               folder: "INBOX" as const,
             })),
             // Destinataires BCC
-            ...(bcc || []).map((userId: string) => ({
+            ...bccIds.map((userId: string) => ({
               userId,
               type: "BCC" as const,
               folder: "INBOX" as const,

@@ -404,16 +404,19 @@ export default function NewFormationPage() {
                 <div className="space-y-2">
                   <Label htmlFor="instructorId">Formateur</Label>
                   <Select
-                    value={formData.instructorId}
+                    value={formData.instructorId || undefined}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, instructorId: value })
+                      setFormData({
+                        ...formData,
+                        instructorId: value === "none" ? "" : value,
+                      })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un formateur" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Aucun</SelectItem>
+                      <SelectItem value="none">Aucun formateur</SelectItem>
                       {users.map((u) => (
                         <SelectItem key={u.id} value={u.id}>
                           {u.firstName} {u.lastName}
@@ -435,7 +438,7 @@ export default function NewFormationPage() {
           <Button type="submit" disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
                 Création...
               </>
             ) : (

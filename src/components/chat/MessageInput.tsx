@@ -5,6 +5,16 @@ import { Icon } from "@/components/ui/icon";
 import { Icons } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { useChatChannel } from "@/hooks/use-chat";
+import {
+  FileUploadDropzone,
+  type UploadedFile,
+} from "@/components/upload/FileUploadDropzone";
+import { FileList } from "@/components/upload/FileList";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import TextareaAutosize from "react-textarea-autosize";
 
 interface MessageInputProps {
@@ -14,6 +24,8 @@ interface MessageInputProps {
 export function MessageInput({ channelId }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [attachments, setAttachments] = useState<UploadedFile[]>([]);
+  const [showUploadPopover, setShowUploadPopover] = useState(false);
   const { sendMessage, startTyping, stopTyping } = useChatChannel(channelId);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -48,15 +60,28 @@ export function MessageInput({ channelId }: MessageInputProps) {
   };
 
   const handleSend = () => {
-    if (!content.trim()) return;
+    if (!content.trim() && attachments.length === 0) return;
 
-    sendMessage({ content: content.trim() });
+    sendMessage({
+      content: content.trim(),
+      attachments: attachments.map((file) => ({
+        fileName: file.name,
+        fileUrl: file.url,
+        fileSize: file.size,
+        mimeType: file.type,
+      })),
+    });
     setContent("");
+    setAttachments([]);
     setIsTyping(false);
     stopTyping();
 
     // Focus back on textarea
     textareaRef.current?.focus();
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -68,6 +93,17 @@ export function MessageInput({ channelId }: MessageInputProps) {
 
   return (
     <div className="border-t p-4">
+      {/* Liste des pièces jointes */}
+      {attachments.length > 0 && (
+        <div className="mb-3">
+          <FileList
+            files={attachments}
+            onRemove={handleRemoveAttachment}
+            maxHeight="200px"
+          />
+        </div>
+      )}
+
       <div className="flex items-end gap-2">
         {/* Bouton emoji */}
         <Button variant="ghost" size="icon" className="shrink-0">
@@ -88,15 +124,32 @@ export function MessageInput({ channelId }: MessageInputProps) {
           />
         </div>
 
-        {/* Bouton pièce jointe */}
-        <Button variant="ghost" size="icon" className="shrink-0">
-          <Icon name={Icons.action.file} size="sm" />
-        </Button>
+        {/* Bouton pièce jointe avec popover */}
+        <Popover open={showUploadPopover} onOpenChange={setShowUploadPopover}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0">
+              <Icon name={Icons.action.file} size="sm" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96" align="end">
+            <div className="space-y-3">
+              <h4 className="font-semibold">Ajouter des fichiers</h4>
+              <FileUploadDropzone
+                endpoint="chatAttachment"
+                maxFiles={5}
+                onUploadComplete={(files) => {
+                  setAttachments((prev) => [...prev, ...files]);
+                  setShowUploadPopover(false);
+                }}
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Bouton envoyer */}
         <Button
           onClick={handleSend}
-          disabled={!content.trim()}
+          disabled={!content.trim() && attachments.length === 0}
           className="shrink-0"
         >
           <Icon name={Icons.action.send} size="sm" className="mr-2" />

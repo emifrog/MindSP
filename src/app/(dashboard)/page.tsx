@@ -166,7 +166,7 @@ export default function DashboardPage() {
       <Card className="border-primary/50 bg-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            🎉 Phase 1 - Foundation
+            🎉 Phase 7 - CI/CD & DevOps
           </CardTitle>
           <CardDescription>
             L&apos;interface de base est maintenant opérationnelle !

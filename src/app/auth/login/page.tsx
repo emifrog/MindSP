@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -21,6 +28,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [tenantSlug, setTenantSlug] = useState("sdis13");
 
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
@@ -31,7 +39,6 @@ export default function LoginPage() {
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const tenantSlug = formData.get("tenantSlug") as string;
 
     try {
       const result = await signIn("credentials", {
@@ -86,16 +93,31 @@ export default function LoginPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="tenantSlug">Organisation</Label>
-              <Input
-                id="tenantSlug"
-                name="tenantSlug"
-                placeholder="sdis13"
-                defaultValue="sdis13"
-                required
+              <Select
+                value={tenantSlug}
+                onValueChange={setTenantSlug}
                 disabled={isLoading}
-              />
+              >
+                <SelectTrigger id="tenantSlug">
+                  <SelectValue placeholder="Sélectionnez votre SDIS" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sdis13">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg"></span>
+                      <span>SDIS 13 - Bouches-du-Rhône</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="sdis06">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg"></span>
+                      <span>SDIS 06 - Alpes-Maritimes</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <p className="text-xs text-muted-foreground">
-                Exemple : sdis13, sdis06
+                Sélectionnez votre SDIS
               </p>
             </div>
 

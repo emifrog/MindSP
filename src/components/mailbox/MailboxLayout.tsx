@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FolderList } from "./FolderList";
 import { MessageList } from "./MessageList";
 import { MessageView } from "./MessageView";
+import { ComposeEmail } from "./ComposeEmail";
 import { Icon } from "@/components/ui/icon";
 import { Icons } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ export function MailboxLayout() {
         <div className="flex h-full flex-col">
           {/* Header Sidebar */}
           <div className="border-b p-4">
-            <div className="flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <Icon name={Icons.nav.messages} size="md" />
                 Mailbox
@@ -41,6 +42,9 @@ export function MailboxLayout() {
                 <Icon name={Icons.ui.close} size="sm" />
               </Button>
             </div>
+
+            {/* Bouton Nouveau message */}
+            <ComposeEmail />
           </div>
 
           {/* Liste des dossiers */}
