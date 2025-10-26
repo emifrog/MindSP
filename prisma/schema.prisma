@@ -764,6 +764,7 @@ enum NotificationType {
   FMPA_CREATED
   FMPA_UPDATED
   FMPA_CANCELLED
+  FMPA_MODIFIED
   FMPA_REMINDER
   
   // Chat

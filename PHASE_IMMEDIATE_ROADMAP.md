@@ -24,11 +24,11 @@
 
 - ✅ **Agenda** : 22 fichiers, ~4000 lignes de code (100%)
 - ✅ **Messagerie** : 18 fichiers, ~5000 lignes de code (100%)
-- ✅ **FMPA** : 13 fichiers, ~3000 lignes de code (100%)
+- ✅ **FMPA** : 21 fichiers, ~5500 lignes de code (100%)
 
-**Total** : **53 fichiers créés**, **~12000 lignes de code**, **3 migrations DB**
+**Total** : **61 fichiers créés**, **~14500 lignes de code**, **3 migrations DB**
 
-**🎊 PHASE IMMÉDIATE TERMINÉE ! Toutes les fonctionnalités centrales sont implémentées !**
+**🎊 PHASE IMMÉDIATE TERMINÉE ! Toutes les fonctionnalités centrales + avancées sont implémentées !**
 
 ---
 
@@ -673,6 +673,19 @@ src/
 - ✅ API `/fmpa/participations/history` - Stats personnelles
 - ✅ Toutes les fonctionnalités requises implémentées
 
+### ✅ Étape 6 Complétée (26 Oct 2025)
+
+**Fonctionnalités avancées ajoutées** :
+
+- ✅ `fmpa-reminders.ts` - Système de rappels automatiques
+- ✅ `fmpa-exports.ts` - Exports PDF/Excel
+- ✅ `FMPAStatistics.tsx` - Statistiques avancées
+- ✅ `FMPAExportButtons.tsx` - Boutons d'export
+- ✅ API `/fmpa/reminders` - Déclenchement rappels
+- ✅ API `/fmpa/statistics` - Statistiques détaillées
+- ✅ API `/fmpa/[id]/export` - Exports multiples
+- ✅ API `/fmpa/team-stats` - Stats équipe Excel
+
 ### 📋 Fonctionnalités Requises
 
 #### A. Calendrier FMPA
@@ -702,25 +715,25 @@ src/
 
 #### D. Rappels Automatiques
 
-- [ ] Rappel inscription J-7
-- [ ] Rappel confirmation J-3
-- [ ] Rappel veille J-1
-- [ ] Notification annulation
-- [ ] Notification modification
+- [x] Rappel inscription J-7 - ✅ fmpa-reminders.ts
+- [x] Rappel confirmation J-3 - ✅ fmpa-reminders.ts
+- [x] Rappel veille J-1 - ✅ fmpa-reminders.ts
+- [x] Notification annulation - ✅ notifyFMPACancellation
+- [x] Notification modification - ✅ notifyFMPAModification
 
 #### E. Statistiques
 
-- [ ] Taux de participation par personne
-- [ ] Taux de présence par FMPA
-- [ ] Heures de formation par personne
-- [ ] Rapport mensuel/annuel
+- [x] Taux de participation par personne - ✅ API statistics
+- [x] Taux de présence par FMPA - ✅ API statistics
+- [x] Heures de formation par personne - ✅ API statistics
+- [x] Rapport mensuel/annuel - ✅ FMPAStatistics.tsx
 
 #### F. Export et Rapports
 
-- [ ] Feuille d'émargement PDF
-- [ ] Liste participants Excel
-- [ ] Rapport de manœuvre
-- [ ] Statistiques équipe
+- [x] Feuille d'émargement PDF - ✅ generateAttendanceSheet
+- [x] Liste participants Excel - ✅ exportParticipantsToExcel
+- [x] Rapport de manœuvre - ✅ generateManeuverReport
+- [x] Statistiques équipe - ✅ exportTeamStatistics
 
 ### 🗂️ Structure Base de Données
 
