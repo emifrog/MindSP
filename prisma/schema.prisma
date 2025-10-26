@@ -215,6 +215,14 @@ model FMPA {
   maxParticipants Int?
   requiresApproval Boolean @default(false)
   
+  // Pédagogie
+  objectives  String?  @db.Text // Objectifs pédagogiques
+  equipment   String?  @db.Text // Matériel nécessaire
+  
+  // Repas
+  mealAvailable Boolean @default(false)
+  mealOptions Json?    // Options de menu
+  
   // Status
   status      FMPAStatus @default(DRAFT)
   
@@ -243,9 +251,13 @@ model FMPA {
 }
 
 enum FMPAType {
-  FORMATION
-  MANOEUVRE
-  PRESENCE_ACTIVE
+  FORMATION          // Formation théorique ou pratique
+  MANOEUVRE          // Manœuvre opérationnelle
+  EXERCICE           // Exercice d'entraînement
+  PRESENCE_ACTIVE    // Présence active en caserne
+  CEREMONIE          // Cérémonie officielle
+  REUNION            // Réunion de service
+  AUTRE              // Autre type d'activité
 }
 
 enum FMPAStatus {
@@ -270,12 +282,18 @@ model Participation {
   checkInTime  DateTime?
   checkOutTime DateTime?
   
+  // Validation
+  validatedBy  String?  // ID du chef qui valide
+  validatedAt  DateTime?
+  
   // Notes
   notes       String?  @db.Text
+  excuseReason String? @db.Text // Raison si absent excusé
   
   // Relations
   fmpa        FMPA     @relation(fields: [fmpaId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealRegistration FMPAMealRegistration?
   
   @@unique([fmpaId, userId])
   @@index([fmpaId])
@@ -284,12 +302,36 @@ model Participation {
   @@map("participations")
 }
 
+// Inscription repas pour FMPA
+model FMPAMealRegistration {
+  id              String   @id @default(uuid())
+  participationId String   @unique
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+  
+  // Choix repas
+  menuChoice      String?  // Choix du menu si plusieurs options
+  
+  // Régimes spéciaux
+  dietaryRestrictions String? @db.Text // Allergies, végétarien, etc.
+  
+  // Confirmation
+  confirmed       Boolean  @default(false)
+  confirmedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([participationId])
+  @@map("fmpa_meal_registrations")
+}
+
 enum ParticipationStatus {
-  REGISTERED
-  CONFIRMED
-  PRESENT
-  ABSENT
-  CANCELLED
+  REGISTERED  // Inscrit
+  CONFIRMED   // Confirmé par le chef
+  PRESENT     // Présent (pointé)
+  ABSENT      // Absent non excusé
+  EXCUSED     // Absent excusé
+  CANCELLED   // Inscription annulée
 }
 
 // ================================
