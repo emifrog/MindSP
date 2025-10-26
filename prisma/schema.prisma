@@ -47,6 +47,8 @@ model Tenant {
   portalDocuments PortalDocument[]
   chatChannels ChatChannel[]
   mailMessages MailMessage[]
+  agendaEvents AgendaEvent[] @relation("AgendaEvents")
+  mailingLists MailingList[] @relation("MailingLists")
   
   @@index([slug])
   @@index([domain])
@@ -142,6 +144,20 @@ model User {
   sentMails MailMessage[] @relation("SentMails")
   receivedMails MailRecipient[] @relation("ReceivedMails")
   mailLabels MailLabel[] @relation("MailLabels")
+  
+  // Agenda
+  agendaEventsCreated AgendaEvent[] @relation("AgendaEventCreator")
+  agendaEventParticipations AgendaEventParticipant[] @relation("AgendaParticipant")
+  
+  // Messagerie & Listes de diffusion
+  mailingListsCreated MailingList[] @relation("MailingListCreator")
+  mailingListMemberships MailingListMember[] @relation("MailingListMemberships")
+  mailingListMembersAdded MailingListMember[] @relation("MailingListMemberAdder")
+  favorites UserFavorite[] @relation("UserFavorites")
+  favoritedBy UserFavorite[] @relation("FavoritedBy")
+  invitationResponses InvitationResponse[] @relation("InvitationResponses")
+  trainingRegistrations TrainingRegistration[] @relation("TrainingRegistrations")
+  pollResponses PollResponse[] @relation("PollResponses")
   
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -727,6 +743,20 @@ enum NotificationType {
   EVENT_INVITATION
   EVENT_REMINDER
   EVENT_UPDATED
+  
+  // Messagerie - Invitations
+  INVITATION_ACCEPTED
+  INVITATION_DECLINED
+  INVITATION_TENTATIVE
+  
+  // Messagerie - Formations
+  TRAINING_INVITATION
+  TRAINING_REGISTERED
+  
+  // Messagerie - Sondages
+  POLL_CREATED
+  POLL_RESPONSE
+  POLL_CLOSED
   
   // Système
   SYSTEM
@@ -1396,6 +1426,10 @@ model MailMessage {
   recipients  MailRecipient[]
   attachments MailAttachment[]
   labels      MailLabel[]
+  mailingLists MailingList[] @relation("MailingListMessages")
+  eventInvitation MessageEventInvitation?
+  trainingProposal MessageTrainingProposal?
+  poll        MessagePoll?
   
   @@index([tenantId])
   @@index([fromId])
@@ -1471,5 +1505,346 @@ model MailLabel {
   @@unique([messageId, userId, name])
   @@index([userId])
   @@map("mail_labels")
+}
+
+// ================================
+// AGENDA / CALENDAR MODELS
+// ================================
+
+// Événements du calendrier
+model AgendaEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  allDay      Boolean  @default(false)
+  
+  type        AgendaEventType @default(AUTRE)
+  status      AgendaEventStatus @default(SCHEDULED)
+  
+  location    String?
+  color       String?  // Couleur dans le calendrier
+  
+  // Relations
+  createdById String
+  createdBy   User     @relation("AgendaEventCreator", fields: [createdById], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation("AgendaEvents", fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  participants AgendaEventParticipant[]
+  reminders    AgendaEventReminder[]
+  messageInvitations MessageEventInvitation[] @relation("MessageInvitations")
+  
+  // Récurrence
+  isRecurring Boolean  @default(false)
+  recurrenceRule String? // RRULE format (RFC 5545)
+  parentEventId String?
+  parentEvent   AgendaEvent?  @relation("RecurringEvents", fields: [parentEventId], references: [id], onDelete: SetNull)
+  childEvents   AgendaEvent[] @relation("RecurringEvents")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([tenantId, startDate])
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+  @@map("agenda_events")
+}
+
+// Participants aux événements
+model AgendaEventParticipant {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     AgendaEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("AgendaParticipant", fields: [userId], references: [id])
+  
+  status    ParticipantStatus @default(PENDING)
+  role      String?  // CHEF, EQUIPIER, OBSERVATEUR
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@map("agenda_event_participants")
+}
+
+// Rappels pour événements
+model AgendaEventReminder {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     AgendaEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  type      ReminderType // EMAIL, NOTIFICATION, SMS
+  timing    Int      // Minutes avant l'événement
+  sent      Boolean  @default(false)
+  sentAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([eventId])
+  @@index([sent])
+  @@map("agenda_event_reminders")
+}
+
+// Enums pour l'Agenda
+enum AgendaEventType {
+  GARDE
+  FMPA
+  FORMATION
+  PROTOCOLE
+  ENTRETIEN
+  PERSONNEL
+  REUNION
+  AUTRE
+}
+
+enum AgendaEventStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ReminderType {
+  EMAIL
+  NOTIFICATION
+  SMS
+}
+
+// ================================
+// MESSAGERIE & ANNUAIRE RH
+// ================================
+
+// Liste de diffusion
+model MailingList {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation("MailingLists", fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String   // "Équipe A", "Tous les chefs"
+  description String?
+  type        MailingListType @default(STATIC) // STATIC ou DYNAMIC
+  
+  // Pour listes dynamiques
+  criteria    Json?    // Critères de sélection automatique
+  
+  // Permissions
+  createdById String
+  createdBy   User     @relation("MailingListCreator", fields: [createdById], references: [id])
+  isPublic    Boolean  @default(false) // Visible par tous ou privée
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  members     MailingListMember[]
+  messages    MailMessage[] @relation("MailingListMessages")
+  
+  @@index([tenantId])
+  @@index([createdById])
+  @@map("mailing_lists")
+}
+
+// Membres d'une liste de diffusion (pour listes statiques)
+model MailingListMember {
+  id        String   @id @default(uuid())
+  listId    String
+  list      MailingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation("MailingListMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  
+  addedById String
+  addedBy   User     @relation("MailingListMemberAdder", fields: [addedById], references: [id])
+  
+  addedAt   DateTime @default(now())
+  
+  @@unique([listId, userId])
+  @@index([listId])
+  @@index([userId])
+  @@map("mailing_list_members")
+}
+
+// Favoris utilisateur (contacts favoris)
+model UserFavorite {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  
+  favoriteId  String
+  favorite    User     @relation("FavoritedBy", fields: [favoriteId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([userId, favoriteId])
+  @@index([userId])
+  @@map("user_favorites")
+}
+
+// Invitation événement dans message
+model MessageEventInvitation {
+  id          String   @id @default(uuid())
+  messageId   String
+  message     MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  eventId     String
+  event       AgendaEvent @relation("MessageInvitations", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Réponses des destinataires
+  responses   InvitationResponse[]
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([messageId])
+  @@index([eventId])
+  @@map("message_event_invitations")
+}
+
+// Réponse à une invitation
+model InvitationResponse {
+  id           String   @id @default(uuid())
+  invitationId String
+  invitation   MessageEventInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  
+  userId       String
+  user         User     @relation("InvitationResponses", fields: [userId], references: [id], onDelete: Cascade)
+  
+  status       InvitationStatus
+  message      String?  // Message optionnel de l'utilisateur
+  
+  respondedAt  DateTime @default(now())
+  
+  @@unique([invitationId, userId])
+  @@index([invitationId])
+  @@index([userId])
+  @@map("invitation_responses")
+}
+
+// Proposition inscription formation dans message
+model MessageTrainingProposal {
+  id          String   @id @default(uuid())
+  messageId   String
+  message     MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?  @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  maxParticipants Int?
+  
+  // Inscriptions
+  registrations TrainingRegistration[]
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([messageId])
+  @@map("message_training_proposals")
+}
+
+// Inscription à une formation proposée
+model TrainingRegistration {
+  id          String   @id @default(uuid())
+  proposalId  String
+  proposal    MessageTrainingProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User     @relation("TrainingRegistrations", fields: [userId], references: [id], onDelete: Cascade)
+  
+  status      TrainingRegistrationStatus @default(PENDING)
+  message     String?  // Message optionnel
+  
+  registeredAt DateTime @default(now())
+  
+  @@unique([proposalId, userId])
+  @@index([proposalId])
+  @@index([userId])
+  @@map("training_registrations")
+}
+
+// Sondage dans message
+model MessagePoll {
+  id          String   @id @default(uuid())
+  messageId   String
+  message     MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  question    String
+  description String?  @db.Text
+  
+  // Options
+  options     PollOption[]
+  
+  // Configuration
+  multipleChoice Boolean @default(false) // Autoriser plusieurs réponses
+  anonymous   Boolean  @default(false)   // Réponses anonymes
+  
+  // Dates
+  closesAt    DateTime?
+  closed      Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([messageId])
+  @@map("message_polls")
+}
+
+// Option de sondage
+model PollOption {
+  id          String   @id @default(uuid())
+  pollId      String
+  poll        MessagePoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  
+  text        String
+  order       Int      @default(0)
+  
+  // Réponses
+  responses   PollResponse[]
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([pollId])
+  @@map("poll_options")
+}
+
+// Réponse à un sondage
+model PollResponse {
+  id          String   @id @default(uuid())
+  optionId    String
+  option      PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User     @relation("PollResponses", fields: [userId], references: [id], onDelete: Cascade)
+  
+  respondedAt DateTime @default(now())
+  
+  @@unique([optionId, userId])
+  @@index([optionId])
+  @@index([userId])
+  @@map("poll_responses")
+}
+
+// Enums pour la messagerie
+enum MailingListType {
+  STATIC   // Membres ajoutés manuellement
+  DYNAMIC  // Membres basés sur critères
+}
+
+enum InvitationStatus {
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+enum TrainingRegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  WAITLIST
 }
 

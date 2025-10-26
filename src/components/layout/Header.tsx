@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Icon } from "@/components/ui/icon";
 import { Icons } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/contexts/SidebarContext";
+import { MenuIcon } from "@/components/ui/menu-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +22,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function Header() {
   const { data: session } = useSession();
+  const { toggleSidebar } = useSidebar();
 
   const getInitials = (name?: string | null) => {
     if (!name) return "U";
@@ -50,10 +54,29 @@ export function Header() {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-6">
       <div className="flex items-center gap-4">
+        {/* Bouton Toggle Sidebar */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="h-9 w-9"
+        >
+          <MenuIcon size={24} />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
+
         <h1 className="text-lg font-semibold">Tableau de bord</h1>
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Recherche */}
+        <Link href="/search">
+          <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Icon name="fluent-emoji:magnifying-glass-tilted-left" size="lg" />
+            <span className="sr-only">Recherche</span>
+          </Button>
+        </Link>
+
         {/* Notifications */}
         <NotificationBell />
 
