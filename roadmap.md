@@ -1,8 +1,8 @@
 ### Checklist Complète par Phase - Projet MindSP
 
-_Dernière mise à jour : 17 Octobre 2025_
+_Dernière mise à jour : 30 Octobre 2025_
 
-**Progression Globale : ~90% (8.1/9 phases)**
+**Progression Globale : ~95% (8.5/9 phases)**
 
 - ✅ Phase 0 : 100% - Initialisation
 - ✅ Phase 1 : 100% - Foundation
@@ -10,9 +10,9 @@ _Dernière mise à jour : 17 Octobre 2025_
 - ✅ Phase 3 : 100% - Module FMPA
 - ✅ Phase 4 : 100% - Messagerie & Temps Réel
 - ✅ Phase 4.5 : 100% - Chat & Mailbox
-- ✅ Phase 4.6 : 100% - Upload Fichiers & Recherche (NOUVEAU)
+- ✅ Phase 4.6 : 100% - Upload Fichiers & Recherche
 - ⏭️ Phase 5 : 0% - PWA & Offline (Sautée)
-- ✅ Phase 6 : 100% - Modules Complémentaires (4/4 modules)
+- ✅ Phase 6 : 100% - Modules Complémentaires (7/7 modules)
 - 🟡 Phase 7 : 0% - Déploiement
 - 🟡 Phase 8 : 0% - Tests & Qualité
 - 🟡 Phase 9 : 0% - Documentation
@@ -456,6 +456,9 @@ _Dernière mise à jour : 17 Octobre 2025_
 - [x] Historique exports avec stats
 - [x] API complète (4 routes)
 - [x] Pages (3) : saisie, validation, export
+- [x] Calendrier mensuel TTA (NOUVEAU)
+- [x] Statistiques détaillées (NOUVEAU)
+- [x] Composants TTACalendar et TTAStats (NOUVEAU)
 
 ### Module Portails (100% ✅)
 
@@ -472,7 +475,43 @@ _Dernière mise à jour : 17 Octobre 2025_
 - [x] Migration base de données
 - [x] Navigation sidebar mise à jour
 
-**Status : 100% ✅ - 4/4 modules complets (Phase 6 terminée ! 🎉)**
+### Module Personnel (100% ✅) - NOUVEAU
+
+- [x] Modèles Prisma (7 tables : PersonnelFile, MedicalStatus, Qualification, Equipment, GradeHistory, Medal, PersonnelDocument)
+- [x] Migration base de données (20251030112339_add_personnel_module)
+- [x] API Personnel (4 routes)
+  - [x] GET/POST /api/personnel/files - CRUD fiches
+  - [x] GET/PATCH/DELETE /api/personnel/files/[id] - Détails fiche
+  - [x] GET/POST /api/personnel/qualifications - Gestion qualifications
+  - [x] GET /api/personnel/alerts - Alertes expiration
+- [x] Composants (4)
+  - [x] AlertsDashboard - Dashboard alertes avec résumé
+  - [x] CareerTimeline - Timeline carrière interactive
+  - [x] QualificationsList - Liste qualifications avec statuts
+- [x] Pages (2)
+  - [x] /personnel - Vue d'ensemble avec alertes
+  - [x] /personnel/[id] - Fiche détaillée avec tabs
+- [x] Fonctionnalités
+  - [x] Fiches personnel complètes
+  - [x] Aptitudes médicales (dates, validité, restrictions)
+  - [x] Qualifications et compétences avec expiration
+  - [x] Équipements individuels (EPI, dates contrôle)
+  - [x] Timeline carrière (grade, engagement, réengagement, ancienneté)
+  - [x] Médailles et décorations
+  - [x] Alertes expiration (30j, 15j, 7j)
+  - [x] Dashboard état global équipe
+
+### Module Formations Complètes (100% ✅) - NOUVEAU
+
+- [x] Calendrier formations mensuel (FormationsCalendar)
+- [x] Vue calendrier avec catégories colorées
+- [x] Filtres par catégorie et niveau
+- [x] Inscriptions en ligne avec workflow
+- [x] Gestion participants et certificats
+- [x] Page /formations/calendrier
+- [x] Intégration avec module Formation existant
+
+**Status : 100% ✅ - 7/7 modules complets (Phase 6 terminée ! 🎉)**
 
 ---
 
@@ -592,19 +631,19 @@ _Dernière mise à jour : 17 Octobre 2025_
 - **Phase 3** : ✅ 100% - Module FMPA
 - **Phase 4** : ✅ 100% - Messagerie & Temps Réel
 - **Phase 5** : ⏭️ 0% - PWA (Sautée)
-- **Phase 6** : ✅ 75% - Modules Complémentaires
+- **Phase 6** : ✅ 100% - Modules Complémentaires (7/7 modules)
 - **Phase 7** : 🟡 0% - Infrastructure
 - **Phase 8** : 🟡 0% - Tests
 - **Phase 9** : 🟡 0% - Production
 
 ### Métriques Actuelles
 
-- **Progression Globale** : ~75%
-- **Fichiers créés Phase 6** : 32
-- **API Routes Phase 6** : 14
-- **Pages Phase 6** : 10
-- **Modèles Prisma Phase 6** : 8
-- **Lignes de code Phase 6** : ~5,000+
+- **Progression Globale** : ~95%
+- **Fichiers créés Phase 6** : 47 (+15 Phase 2)
+- **API Routes Phase 6** : 18 (+4 Personnel)
+- **Pages Phase 6** : 13 (+3 Phase 2)
+- **Modèles Prisma Phase 6** : 15 (+7 Personnel)
+- **Lignes de code Phase 6** : ~10,000+ (+5,000 Phase 2)
 
 ### Modules Opérationnels
 
@@ -613,7 +652,9 @@ _Dernière mise à jour : 17 Octobre 2025_
 - ✅ **Notifications** - Push et in-app
 - ✅ **Agenda** - Calendrier et disponibilités
 - ✅ **Formation** - Catalogue et attestations PDF
-- ✅ **TTA** - Calcul indemnités et export SEPA
+- ✅ **TTA** - Calcul indemnités, export SEPA, calendrier
+- ✅ **Personnel** - Fiches, aptitudes, carrière, alertes (NOUVEAU)
+- ✅ **Portails** - Actualités et documents
 
 ---
 
