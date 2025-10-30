@@ -49,6 +49,7 @@ model Tenant {
   mailMessages MailMessage[]
   agendaEvents AgendaEvent[] @relation("AgendaEvents")
   mailingLists MailingList[] @relation("MailingLists")
+  personnelFiles PersonnelFile[]
   
   @@index([slug])
   @@index([domain])
@@ -158,6 +159,10 @@ model User {
   invitationResponses InvitationResponse[] @relation("InvitationResponses")
   trainingRegistrations TrainingRegistration[] @relation("TrainingRegistrations")
   pollResponses PollResponse[] @relation("PollResponses")
+  
+  // Personnel
+  personnelFile PersonnelFile?
+  personnelDocumentsUploaded PersonnelDocument[] @relation("PersonnelDocumentUploader")
   
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1889,5 +1894,295 @@ enum TrainingRegistrationStatus {
   CONFIRMED
   CANCELLED
   WAITLIST
+}
+
+// ================================
+// MODULE SUIVI PERSONNEL
+// ================================
+
+model PersonnelFile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Engagement
+  engagementDate  DateTime
+  reengagementDate DateTime?
+  
+  // Grade
+  currentGrade    String
+  gradeDate       DateTime
+  
+  // Relations
+  medicalStatus   MedicalStatus?
+  qualifications  Qualification[]
+  equipments      Equipment[]
+  gradeHistory    GradeHistory[]
+  medals          Medal[]
+  documents       PersonnelDocument[]
+  
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([tenantId])
+  @@map("personnel_files")
+}
+
+model MedicalStatus {
+  id              String   @id @default(uuid())
+  personnelFileId String   @unique
+  personnelFile   PersonnelFile @relation(fields: [personnelFileId], references: [id], onDelete: Cascade)
+  
+  // Aptitude
+  status          AptitudeStatus
+  validFrom       DateTime
+  validUntil      DateTime
+  
+  // Restrictions
+  restrictions    String?  @db.Text
+  
+  // Visite médicale
+  lastCheckup     DateTime
+  nextCheckup     DateTime
+  doctor          String?
+  
+  // Alertes
+  alertSent       Boolean  @default(false)
+  alertSentAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([validUntil])
+  @@index([nextCheckup])
+  @@map("medical_status")
+}
+
+model Qualification {
+  id              String   @id @default(uuid())
+  personnelFileId String
+  personnelFile   PersonnelFile @relation(fields: [personnelFileId], references: [id], onDelete: Cascade)
+  
+  // Qualification
+  name            String
+  type            QualificationType
+  level           String?
+  
+  // Validité
+  obtainedDate    DateTime
+  validUntil      DateTime?
+  renewable       Boolean  @default(true)
+  
+  // Organisme
+  organization    String?
+  certificateNumber String?
+  
+  // Documents
+  documentUrl     String?
+  
+  // Alertes
+  alertSent       Boolean  @default(false)
+  alertSentAt     DateTime?
+  
+  status          QualificationStatus @default(VALID)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([personnelFileId])
+  @@index([validUntil])
+  @@index([status])
+  @@map("qualifications")
+}
+
+model Equipment {
+  id              String   @id @default(uuid())
+  personnelFileId String
+  personnelFile   PersonnelFile @relation(fields: [personnelFileId], references: [id], onDelete: Cascade)
+  
+  // Équipement
+  name            String
+  type            EquipmentType
+  serialNumber    String?
+  
+  // Attribution
+  assignedDate    DateTime
+  returnDate      DateTime?
+  
+  // Contrôle
+  lastCheck       DateTime?
+  nextCheck       DateTime?
+  checkFrequency  Int?     // Mois entre contrôles
+  
+  // État
+  condition       EquipmentCondition
+  status          EquipmentStatus @default(ASSIGNED)
+  
+  notes           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([personnelFileId])
+  @@index([nextCheck])
+  @@index([status])
+  @@map("equipments")
+}
+
+model GradeHistory {
+  id              String   @id @default(uuid())
+  personnelFileId String
+  personnelFile   PersonnelFile @relation(fields: [personnelFileId], references: [id], onDelete: Cascade)
+  
+  // Grade
+  grade           String
+  effectiveDate   DateTime
+  
+  // Promotion
+  promotionType   PromotionType
+  orderNumber     String?
+  orderDate       DateTime?
+  
+  notes           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([personnelFileId, effectiveDate])
+  @@map("grade_history")
+}
+
+model Medal {
+  id              String   @id @default(uuid())
+  personnelFileId String
+  personnelFile   PersonnelFile @relation(fields: [personnelFileId], references: [id], onDelete: Cascade)
+  
+  // Médaille
+  name            String
+  type            MedalType
+  level           String?  // Échelon (bronze, argent, or)
+  
+  // Attribution
+  awardDate       DateTime
+  orderNumber     String?
+  
+  // Cérémonie
+  ceremonyDate    DateTime?
+  ceremonyPlace   String?
+  
+  notes           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([personnelFileId])
+  @@map("medals")
+}
+
+model PersonnelDocument {
+  id              String   @id @default(uuid())
+  personnelFileId String
+  personnelFile   PersonnelFile @relation(fields: [personnelFileId], references: [id], onDelete: Cascade)
+  
+  // Document
+  title           String
+  type            PersonnelDocumentType
+  category        String?
+  
+  // Fichier
+  fileUrl         String
+  fileName        String
+  fileSize        Int
+  mimeType        String
+  
+  // Dates
+  documentDate    DateTime?
+  validUntil      DateTime?
+  
+  // Métadonnées
+  description     String?  @db.Text
+  tags            String[]
+  
+  uploadedBy      String
+  uploader        User     @relation("PersonnelDocumentUploader", fields: [uploadedBy], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([personnelFileId])
+  @@index([type])
+  @@map("personnel_documents")
+}
+
+// Enums pour le module Personnel
+
+enum AptitudeStatus {
+  APT
+  INAPT_TEMP
+  INAPT_DEF
+  RESTRICTIONS
+}
+
+enum QualificationType {
+  FORMATION
+  SPECIALITE
+  PERMIS
+  HABILITATION
+  AUTRE
+}
+
+enum QualificationStatus {
+  VALID
+  EXPIRING_SOON
+  EXPIRED
+  SUSPENDED
+}
+
+enum EquipmentType {
+  EPI
+  VETEMENT
+  MATERIEL
+  AUTRE
+}
+
+enum EquipmentCondition {
+  NEUF
+  BON
+  MOYEN
+  MAUVAIS
+  REFORME
+}
+
+enum EquipmentStatus {
+  ASSIGNED
+  RETURNED
+  LOST
+  DAMAGED
+}
+
+enum PromotionType {
+  ANCIENNETE
+  CHOIX
+  EXAMEN
+  AUTRE
+}
+
+enum MedalType {
+  HONNEUR
+  MERITE
+  ANCIENNETE
+  COURAGE
+  AUTRE
+}
+
+enum PersonnelDocumentType {
+  CONTRAT
+  ARRETE
+  ATTESTATION
+  DIPLOME
+  CERTIFICAT
+  AUTRE
 }
 
