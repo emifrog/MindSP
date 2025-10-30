@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
 import { z } from "zod";
+import {
+  registerLimiter,
+  getIdentifier,
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   tenantSlug: z.string().min(1, "Organisation requise"),
@@ -15,6 +21,17 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Vérifier le rate limiting (3 inscriptions par heure par IP)
+    const identifier = getIdentifier(request);
+    const { success, remaining, reset } = await checkRateLimit(
+      registerLimiter,
+      identifier
+    );
+
+    if (!success) {
+      return rateLimitResponse(remaining, reset);
+    }
+
     const body = await request.json();
 
     // Valider les données

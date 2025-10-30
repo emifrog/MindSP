@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
+import {
+  createMessageSchema,
+  formatZodErrors,
+  paginationSchema,
+} from "@/lib/validation-schemas";
+import { sanitizeString } from "@/lib/sanitize";
 
 // GET /api/conversations/[id]/messages - Liste des messages
 export async function GET(
@@ -15,8 +21,16 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+
+    // Validation pagination
+    const paginationValidation = paginationSchema.safeParse({
+      page: searchParams.get("page"),
+      limit: searchParams.get("limit"),
+    });
+
+    const { page, limit } = paginationValidation.success
+      ? paginationValidation.data
+      : { page: 1, limit: 50 };
 
     // Vérifier que l'utilisateur est membre de la conversation
     const member = await prisma.conversationMember.findFirst({
@@ -115,18 +129,35 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { content, type = "TEXT" } = body;
 
-    if (!content) {
-      return NextResponse.json({ error: "Contenu requis" }, { status: 400 });
+    // Validation avec Zod
+    const validation = createMessageSchema.safeParse({
+      conversationId: params.id,
+      content: body.content,
+      type: body.type,
+    });
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: "Données invalides",
+          details: formatZodErrors(validation.error),
+        },
+        { status: 400 }
+      );
     }
+
+    const { content, type } = validation.data;
+
+    // Sanitiser le contenu
+    const sanitizedContent = sanitizeString(content);
 
     const message = await prisma.message.create({
       data: {
         conversationId: params.id,
         senderId: session.user.id,
         tenantId: session.user.tenantId,
-        content,
+        content: sanitizedContent,
         type,
         status: "SENT",
       },

@@ -22,13 +22,33 @@ app.prepare().then(() => {
     }
   });
 
-  // Initialiser Socket.IO
+  // Initialiser Socket.IO avec CORS strict
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["http://localhost:3000", "https://localhost:3000"];
+
   const io = new Server(httpServer, {
     path: "/api/socket",
     cors: {
-      origin: process.env.NEXTAUTH_URL || "http://localhost:3000",
+      origin: (origin, callback) => {
+        // Autoriser les requêtes sans origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        // Vérifier si l'origin est autorisée
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`⚠️ Origin non autorisée: ${origin}`);
+          callback(new Error("Origin non autorisée par CORS"));
+        }
+      },
       credentials: true,
+      methods: ["GET", "POST"],
     },
+    // Limites de connexion
+    maxHttpBufferSize: 1e6, // 1MB
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   const { PrismaClient } = require("@prisma/client");

@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import {
+  apiLimiter,
+  getIdentifier,
+  checkRateLimit,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Appliquer rate limiting sur toutes les routes API
+  if (pathname.startsWith("/api/")) {
+    const identifier = getIdentifier(request);
+    const { success, remaining, reset } = await checkRateLimit(
+      apiLimiter,
+      identifier
+    );
+
+    if (!success) {
+      return rateLimitResponse(remaining, reset);
+    }
+  }
 
   // Routes publiques
   const publicRoutes = ["/auth/login", "/auth/register", "/auth/error"];

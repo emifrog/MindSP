@@ -23,6 +23,15 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const exportType = searchParams.get("type") || "participants";
 
+    // Logger l'audit de l'export
+    const { logExport } = await import("@/lib/audit");
+    await logExport(
+      session.user.id,
+      session.user.tenantId,
+      `FMPA_${exportType.toUpperCase()}`,
+      { fmpaId: params.id, exportType }
+    );
+
     switch (exportType) {
       case "attendance":
         // Feuille d'émargement (données JSON pour générer PDF côté client)

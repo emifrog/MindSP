@@ -45,6 +45,16 @@ export async function DELETE(
       );
     }
 
+    // Logger l'audit avant suppression
+    const { logDeletion, AuditEntity } = await import("@/lib/audit");
+    await logDeletion(
+      session.user.id,
+      session.user.tenantId,
+      AuditEntity.TTA,
+      params.id,
+      entry
+    );
+
     await prisma.tTAEntry.delete({
       where: { id: params.id },
     });

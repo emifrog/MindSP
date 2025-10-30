@@ -161,6 +161,18 @@ export async function DELETE(
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
+    // Rate limiting pour actions sensibles (10 suppressions/min par utilisateur)
+    const { sensitiveLimiter, checkRateLimit, rateLimitResponse } =
+      await import("@/lib/rate-limit");
+    const { success, remaining, reset } = await checkRateLimit(
+      sensitiveLimiter,
+      session.user.id
+    );
+
+    if (!success) {
+      return rateLimitResponse(remaining, reset);
+    }
+
     // Vérifier que la FMPA existe et appartient au tenant
     const existingFmpa = await prisma.fMPA.findFirst({
       where: {
@@ -183,15 +195,25 @@ export async function DELETE(
       );
     }
 
-    // Supprimer les participations d'abord
-    await prisma.participation.deleteMany({
-      where: { fmpaId: params.id },
-    });
+    // Logger l'audit avant suppression
+    const { logDeletion, AuditEntity } = await import("@/lib/audit");
+    await logDeletion(
+      session.user.id,
+      session.user.tenantId,
+      AuditEntity.FMPA,
+      params.id,
+      existingFmpa
+    );
 
-    // Supprimer la FMPA
-    await prisma.fMPA.delete({
-      where: { id: params.id },
-    });
+    // Supprimer les participations d'abord puis la FMPA (transaction)
+    await prisma.$transaction([
+      prisma.participation.deleteMany({
+        where: { fmpaId: params.id },
+      }),
+      prisma.fMPA.delete({
+        where: { id: params.id },
+      }),
+    ]);
 
     return NextResponse.json({ message: "FMPA supprimée avec succès" });
   } catch (error) {

@@ -46,6 +46,8 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.1",
     "@uploadthing/react": "^7.3.3",
+    "@upstash/ratelimit": "^2.0.6",
+    "@upstash/redis": "^1.35.6",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.13.2",
     "class-variance-authority": "^0.7.1",

@@ -106,6 +106,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Logger l'audit de l'export
+    const { logExport } = await import("@/lib/audit");
+    await logExport(session.user.id, session.user.tenantId, `TTA_${format}`, {
+      month,
+      year,
+      entriesCount: entries.length,
+      totalAmount,
+    });
+
     // Marquer les entrées comme exportées
     await prisma.tTAEntry.updateMany({
       where: {

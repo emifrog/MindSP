@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
+import {
+  createConversationSchema,
+  formatZodErrors,
+} from "@/lib/validation-schemas";
+import { sanitizeIds, sanitizeString } from "@/lib/sanitize";
 
 // GET /api/conversations - Liste des conversations
 export async function GET(request: NextRequest) {
@@ -80,18 +85,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, name, memberIds } = body;
 
-    // Validation
-    if (!type || !memberIds || memberIds.length === 0) {
+    // Validation avec Zod
+    const validation = createConversationSchema.safeParse({
+      type: body.type,
+      title: body.name,
+      participantIds: body.memberIds,
+    });
+
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Type et membres requis" },
+        {
+          error: "Données invalides",
+          details: formatZodErrors(validation.error),
+        },
         { status: 400 }
       );
     }
 
-    // Pour les conversations directes, vérifier qu'il n'y a que 2 membres
-    if (type === "DIRECT" && memberIds.length !== 1) {
+    const { type, title, participantIds } = validation.data;
+
+    // Sanitiser les données
+    const sanitizedName = title ? sanitizeString(title) : null;
+    const sanitizedMemberIds = sanitizeIds(participantIds);
+
+    // Pour les conversations directes, vérifier qu'il n'y a que 1 autre membre
+    if (type === "DIRECT" && sanitizedMemberIds.length !== 1) {
       return NextResponse.json(
         {
           error: "Une conversation directe nécessite exactement 1 autre membre",
@@ -109,7 +128,7 @@ export async function POST(request: NextRequest) {
           members: {
             every: {
               userId: {
-                in: [session.user.id, memberIds[0]],
+                in: [session.user.id, sanitizedMemberIds[0]],
               },
             },
           },
@@ -129,14 +148,14 @@ export async function POST(request: NextRequest) {
       data: {
         tenantId: session.user.tenantId,
         type,
-        name: type === "DIRECT" ? null : name,
+        name: type === "DIRECT" ? null : sanitizedName,
         members: {
           create: [
             {
               userId: session.user.id,
               role: "OWNER",
             },
-            ...memberIds.map((userId: string) => ({
+            ...sanitizedMemberIds.map((userId: string) => ({
               userId,
               role: "MEMBER" as const,
             })),

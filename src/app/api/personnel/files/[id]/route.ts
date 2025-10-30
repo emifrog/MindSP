@@ -156,6 +156,35 @@ export async function DELETE(
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
+    // Récupérer les données avant suppression pour l'audit
+    const personnelFile = await prisma.personnelFile.findUnique({
+      where: { id: params.id },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+        medicalStatus: true,
+        qualifications: true,
+        equipments: true,
+      },
+    });
+
+    if (!personnelFile) {
+      return NextResponse.json(
+        { error: "Fiche personnel introuvable" },
+        { status: 404 }
+      );
+    }
+
+    // Logger l'audit
+    const { logDeletion, AuditEntity } = await import("@/lib/audit");
+    await logDeletion(
+      session.user.id,
+      session.user.tenantId,
+      AuditEntity.PERSONNEL,
+      params.id,
+      personnelFile
+    );
+
+    // Supprimer la fiche
     await prisma.personnelFile.delete({
       where: { id: params.id },
     });

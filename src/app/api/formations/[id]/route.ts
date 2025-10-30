@@ -180,6 +180,9 @@ export async function DELETE(
     // Vérifier que la formation existe et appartient au tenant
     const existing = await prisma.formation.findUnique({
       where: { id: params.id },
+      include: {
+        registrations: true,
+      },
     });
 
     if (!existing || existing.tenantId !== session.user.tenantId) {
@@ -189,6 +192,17 @@ export async function DELETE(
       );
     }
 
+    // Logger l'audit avant suppression
+    const { logDeletion, AuditEntity } = await import("@/lib/audit");
+    await logDeletion(
+      session.user.id,
+      session.user.tenantId,
+      AuditEntity.FORMATION,
+      params.id,
+      existing
+    );
+
+    // Supprimer la formation
     await prisma.formation.delete({
       where: {
         id: params.id,

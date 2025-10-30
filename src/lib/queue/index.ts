@@ -7,9 +7,18 @@ import { Queue, Worker, Job } from "bullmq";
 import { sendEmail } from "@/lib/email";
 import { createNotification } from "@/lib/notifications";
 
+// Configuration Redis - SANS fallbacks dangereux
+if (!process.env.REDIS_HOST) {
+  throw new Error("REDIS_HOST environment variable is required");
+}
+
+if (!process.env.REDIS_PORT) {
+  throw new Error("REDIS_PORT environment variable is required");
+}
+
 const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
+  host: process.env.REDIS_HOST,
+  port: parseInt(process.env.REDIS_PORT, 10),
 };
 
 // ============================================
