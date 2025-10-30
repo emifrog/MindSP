@@ -1,11 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FormationsCalendar } from "@/components/formations/FormationsCalendar";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load du calendrier (composant lourd)
+const FormationsCalendar = dynamic(
+  () =>
+    import("@/components/formations/FormationsCalendar").then((mod) => ({
+      default: mod.FormationsCalendar,
+    })),
+  {
+    loading: () => (
+      <Card>
+        <CardContent className="py-12">
+          <Skeleton className="h-[600px] w-full" />
+        </CardContent>
+      </Card>
+    ),
+    ssr: false,
+  }
+);
 
 interface Formation {
   id: string;

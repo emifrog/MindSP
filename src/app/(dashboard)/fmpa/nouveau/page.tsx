@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FMPAForm } from "@/components/fmpa/FMPAForm";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load du formulaire FMPA (composant lourd avec validations)
+const FMPAForm = dynamic(
+  () =>
+    import("@/components/fmpa/FMPAForm").then((mod) => ({
+      default: mod.FMPAForm,
+    })),
+  {
+    loading: () => <Skeleton className="h-[800px] w-full" />,
+    ssr: false,
+  }
+);
 
 export default function NewFMPAPage() {
   return (

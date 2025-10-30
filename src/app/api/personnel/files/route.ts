@@ -4,6 +4,16 @@ import getServerSession from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import {
+  parsePaginationParams,
+  getPaginationParams,
+  createPaginationMeta,
+} from "@/lib/pagination";
+import {
+  getCachedPersonnelList,
+  cachePersonnelList,
+  invalidatePersonnelCache,
+} from "@/lib/cache";
 
 const createFileSchema = z.object({
   userId: z.string(),
@@ -65,34 +75,64 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
-    const files = await prisma.personnelFile.findMany({
-      where: { tenantId: session.user.tenantId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            badge: true,
-            avatar: true,
-            role: true,
-            status: true,
-          },
-        },
-        medicalStatus: true,
-        _count: {
-          select: {
-            qualifications: true,
-            equipments: true,
-            medals: true,
-          },
-        },
-      },
-      orderBy: { user: { lastName: "asc" } },
-    });
+    // Pagination
+    const { page, limit } = parsePaginationParams(searchParams);
+    const { skip, take } = getPaginationParams(page, limit);
 
-    return NextResponse.json({ files });
+    const where = { tenantId: session.user.tenantId };
+
+    // Essayer de récupérer du cache
+    const cacheKey = { page, limit };
+    const cached = await getCachedPersonnelList(
+      session.user.tenantId,
+      cacheKey
+    );
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // Si pas en cache, récupérer de la DB
+    const [files, total] = await Promise.all([
+      prisma.personnelFile.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              badge: true,
+              avatar: true,
+              role: true,
+              status: true,
+            },
+          },
+          medicalStatus: true,
+          _count: {
+            select: {
+              qualifications: true,
+              equipments: true,
+              medals: true,
+            },
+          },
+        },
+        orderBy: { user: { lastName: "asc" } },
+        skip,
+        take,
+      }),
+      prisma.personnelFile.count({ where }),
+    ]);
+
+    const response = {
+      files,
+      pagination: createPaginationMeta(page, limit, total),
+    };
+
+    // Mettre en cache
+    await cachePersonnelList(session.user.tenantId, cacheKey, response);
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur GET /api/personnel/files:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
@@ -149,6 +189,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Invalider le cache personnel
+    await invalidatePersonnelCache(session.user.tenantId);
 
     return NextResponse.json({ file }, { status: 201 });
   } catch (error) {

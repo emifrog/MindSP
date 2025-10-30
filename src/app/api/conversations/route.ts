@@ -6,6 +6,16 @@ import {
   formatZodErrors,
 } from "@/lib/validation-schemas";
 import { sanitizeIds, sanitizeString } from "@/lib/sanitize";
+import {
+  parsePaginationParams,
+  getPaginationParams,
+  createPaginationMeta,
+} from "@/lib/pagination";
+import {
+  getCachedConversationList,
+  cacheConversationList,
+  invalidateConversationCache,
+} from "@/lib/cache";
 
 // GET /api/conversations - Liste des conversations
 export async function GET(request: NextRequest) {
@@ -16,56 +26,93 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const conversations = await prisma.conversation.findMany({
-      where: {
-        tenantId: session.user.tenantId,
-        members: {
-          some: {
-            userId: session.user.id,
-          },
-        },
-      },
-      include: {
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-        messages: {
-          take: 1,
-          orderBy: {
-            createdAt: "desc",
-          },
-          include: {
-            sender: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            messages: true,
-          },
-        },
-      },
-      orderBy: {
-        lastMessageAt: "desc",
-      },
-    });
+    // Pagination
+    const { searchParams } = new URL(request.url);
+    const { page, limit } = parsePaginationParams(searchParams);
+    const { skip, take } = getPaginationParams(page, limit);
 
-    return NextResponse.json({ conversations });
+    const where = {
+      tenantId: session.user.tenantId,
+      members: {
+        some: {
+          userId: session.user.id,
+        },
+      },
+    };
+
+    // Essayer de récupérer du cache
+    const cacheKey = { page, limit };
+    const cached = await getCachedConversationList(
+      session.user.tenantId,
+      session.user.id,
+      cacheKey
+    );
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // Si pas en cache, récupérer de la DB
+    const [conversations, total] = await Promise.all([
+      prisma.conversation.findMany({
+        where,
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          messages: {
+            take: 1,
+            orderBy: {
+              createdAt: "desc",
+            },
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              messages: true,
+            },
+          },
+        },
+        orderBy: {
+          lastMessageAt: "desc",
+        },
+        skip,
+        take,
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+
+    const response = {
+      conversations,
+      pagination: createPaginationMeta(page, limit, total),
+    };
+
+    // Mettre en cache
+    await cacheConversationList(
+      session.user.tenantId,
+      session.user.id,
+      cacheKey,
+      response
+    );
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur GET /api/conversations:", error);
     return NextResponse.json(
@@ -178,6 +225,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Invalider le cache conversations pour tous les membres
+    await invalidateConversationCache(session.user.tenantId);
 
     return NextResponse.json({ conversation }, { status: 201 });
   } catch (error) {

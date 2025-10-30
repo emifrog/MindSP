@@ -57,50 +57,63 @@ export async function GET(request: NextRequest) {
       fmpaFilter.type = type;
     }
 
-    // 1. Taux de participation par personne
-    const participationsByUser = await prisma.participation.groupBy({
-      by: ["userId"],
-      where: {
-        fmpa: fmpaFilter,
-      },
-      _count: {
+    // 1. Taux de participation par personne (optimisé, pas de N+1)
+    const [participationsByUser, presentByUser] = await Promise.all([
+      prisma.participation.groupBy({
+        by: ["userId"],
+        where: {
+          fmpa: fmpaFilter,
+        },
+        _count: {
+          id: true,
+        },
+      }),
+      prisma.participation.groupBy({
+        by: ["userId"],
+        where: {
+          fmpa: fmpaFilter,
+          status: "PRESENT",
+        },
+        _count: {
+          id: true,
+        },
+      }),
+    ]);
+
+    // Récupérer tous les users en une seule query
+    const userIds = participationsByUser.map((p) => p.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
         id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
       },
     });
 
-    const userParticipationRates = await Promise.all(
-      participationsByUser.map(async (userStat) => {
-        const user = await prisma.user.findUnique({
-          where: { id: userStat.userId },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        });
-
-        const presentCount = await prisma.participation.count({
-          where: {
-            userId: userStat.userId,
-            status: "PRESENT",
-            fmpa: fmpaFilter,
-          },
-        });
-
-        const rate =
-          userStat._count.id > 0
-            ? Math.round((presentCount / userStat._count.id) * 100)
-            : 0;
-
-        return {
-          user,
-          totalParticipations: userStat._count.id,
-          presentCount,
-          rate,
-        };
-      })
+    // Créer des maps pour accès rapide
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const presentMap = new Map(
+      presentByUser.map((p) => [p.userId, p._count.id])
     );
+
+    // Construire les stats sans N+1
+    const userParticipationRates = participationsByUser.map((userStat) => {
+      const user = userMap.get(userStat.userId);
+      const presentCount = presentMap.get(userStat.userId) || 0;
+      const rate =
+        userStat._count.id > 0
+          ? Math.round((presentCount / userStat._count.id) * 100)
+          : 0;
+
+      return {
+        user,
+        totalParticipations: userStat._count.id,
+        presentCount,
+        rate,
+      };
+    });
 
     // 2. Taux de présence par FMPA
     const fmpas = await prisma.fMPA.findMany({

@@ -1,14 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/hooks/use-auth";
-import { TTACalendar } from "@/components/tta/TTACalendar";
 import { TTAStats } from "@/components/tta/TTAStats";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load du calendrier TTA
+const TTACalendar = dynamic(
+  () =>
+    import("@/components/tta/TTACalendar").then((mod) => ({
+      default: mod.TTACalendar,
+    })),
+  {
+    loading: () => <Skeleton className="h-[600px] w-full" />,
+    ssr: false,
+  }
+);
 
 interface TTAEntry {
   id: string;

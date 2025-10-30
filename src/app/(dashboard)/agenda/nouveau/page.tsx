@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { EventForm } from "@/components/agenda/EventForm";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load du formulaire événement
+const EventForm = dynamic(
+  () =>
+    import("@/components/agenda/EventForm").then((mod) => ({
+      default: mod.EventForm,
+    })),
+  {
+    loading: () => <Skeleton className="h-[700px] w-full" />,
+    ssr: false,
+  }
+);
 
 export default function NewEventPage() {
   return (

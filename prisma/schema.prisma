@@ -304,6 +304,8 @@ model Participation {
   @@index([fmpaId])
   @@index([userId])
   @@index([status])
+  @@index([fmpaId, status]) // Pour stats par FMPA
+  @@index([userId, status]) // Pour stats par utilisateur
   @@map("participations")
 }
 
@@ -434,6 +436,8 @@ model Message {
   @@index([senderId])
   @@index([tenantId])
   @@index([createdAt])
+  @@index([conversationId, createdAt]) // Pour liste messages par conversation
+  @@index([senderId, createdAt]) // Pour messages envoyés par utilisateur
   @@map("messages")
 }
 
@@ -590,6 +594,8 @@ model FormationRegistration {
   @@index([userId])
   @@index([tenantId])
   @@index([status])
+  @@index([formationId, status]) // Pour stats par formation
+  @@index([userId, status]) // Pour inscriptions par utilisateur
   @@map("formation_registrations")
 }
 
@@ -761,6 +767,8 @@ model Notification {
   @@index([createdAt])
   @@index([priority])
   @@index([expiresAt])
+  @@index([userId, read, createdAt]) // Pour liste notifications non lues
+  @@index([userId, createdAt]) // Pour liste toutes notifications
   @@map("notifications")
 }
 
@@ -1023,6 +1031,9 @@ model TTAEntry {
   @@index([month, year])
   @@index([status])
   @@index([date])
+  @@index([userId, date]) // Pour liste TTA par user et date
+  @@index([userId, status, date]) // Pour filtrage par status
+  @@index([tenantId, month, year]) // Pour exports mensuels
   @@map("tta_entries")
 }
 
@@ -1374,6 +1385,8 @@ model ChatMessage {
   @@index([userId])
   @@index([parentId])
   @@index([createdAt])
+  @@index([channelId, createdAt]) // Pour liste messages par canal
+  @@index([userId, createdAt]) // Pour messages par utilisateur
   @@map("chat_messages")
 }
 

@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
+import {
+  parsePaginationParams,
+  getPaginationParams,
+  createPaginationMeta,
+} from "@/lib/pagination";
+import {
+  getCachedTTAList,
+  cacheTTAList,
+  invalidateTTACache,
+} from "@/lib/cache";
 
 // Taux horaires (à configurer selon les besoins)
 const HOURLY_RATES = {
@@ -73,30 +83,54 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    const entries = await prisma.tTAEntry.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        fmpa: {
-          select: {
-            id: true,
-            title: true,
-            code: true,
-          },
-        },
-      },
-      orderBy: {
-        date: "desc",
-      },
-    });
+    // Pagination
+    const { page, limit } = parsePaginationParams(searchParams);
+    const { skip, take } = getPaginationParams(page, limit);
 
-    return NextResponse.json({ entries });
+    // Essayer de récupérer du cache
+    const cacheKey = { month, year, userId, status, page, limit };
+    const cached = await getCachedTTAList(session.user.tenantId, cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // Si pas en cache, récupérer de la DB
+    const [entries, total] = await Promise.all([
+      prisma.tTAEntry.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          fmpa: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: {
+          date: "desc",
+        },
+        skip,
+        take,
+      }),
+      prisma.tTAEntry.count({ where }),
+    ]);
+
+    const response = {
+      entries,
+      pagination: createPaginationMeta(page, limit, total),
+    };
+
+    // Mettre en cache
+    await cacheTTAList(session.user.tenantId, cacheKey, response);
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur GET /api/tta/entries:", error);
     return NextResponse.json(
@@ -179,6 +213,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Invalider le cache TTA
+    await invalidateTTACache(session.user.tenantId);
 
     return NextResponse.json({ entry }, { status: 201 });
   } catch (error) {

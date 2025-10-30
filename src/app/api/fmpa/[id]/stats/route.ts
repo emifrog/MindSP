@@ -27,37 +27,12 @@ export async function GET(
       return NextResponse.json({ error: "FMPA introuvable" }, { status: 404 });
     }
 
-    // Récupérer les statistiques
-    const [
-      totalParticipations,
-      registeredCount,
-      confirmedCount,
-      presentCount,
-      absentCount,
-      excusedCount,
-      cancelledCount,
-      mealCount,
-    ] = await Promise.all([
-      prisma.participation.count({
+    // Récupérer les statistiques de manière optimisée (1 query au lieu de 7)
+    const [participationsByStatus, mealCount] = await Promise.all([
+      prisma.participation.groupBy({
+        by: ["status"],
         where: { fmpaId: params.id },
-      }),
-      prisma.participation.count({
-        where: { fmpaId: params.id, status: "REGISTERED" },
-      }),
-      prisma.participation.count({
-        where: { fmpaId: params.id, status: "CONFIRMED" },
-      }),
-      prisma.participation.count({
-        where: { fmpaId: params.id, status: "PRESENT" },
-      }),
-      prisma.participation.count({
-        where: { fmpaId: params.id, status: "ABSENT" },
-      }),
-      prisma.participation.count({
-        where: { fmpaId: params.id, status: "EXCUSED" },
-      }),
-      prisma.participation.count({
-        where: { fmpaId: params.id, status: "CANCELLED" },
+        _count: true,
       }),
       prisma.fMPAMealRegistration.count({
         where: {
@@ -67,6 +42,23 @@ export async function GET(
         },
       }),
     ]);
+
+    // Créer un map pour accès rapide
+    const statusMap = new Map(
+      participationsByStatus.map((item) => [item.status, item._count])
+    );
+
+    // Extraire les counts par status
+    const totalParticipations = participationsByStatus.reduce(
+      (sum, item) => sum + item._count,
+      0
+    );
+    const registeredCount = statusMap.get("REGISTERED") || 0;
+    const confirmedCount = statusMap.get("CONFIRMED") || 0;
+    const presentCount = statusMap.get("PRESENT") || 0;
+    const absentCount = statusMap.get("ABSENT") || 0;
+    const excusedCount = statusMap.get("EXCUSED") || 0;
+    const cancelledCount = statusMap.get("CANCELLED") || 0;
 
     // Calculer les taux
     const attendanceRate =

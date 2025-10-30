@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
+import {
+  parsePaginationParams,
+  getPaginationParams,
+  createPaginationMeta,
+} from "@/lib/pagination";
+import {
+  getCachedFormationList,
+  cacheFormationList,
+  invalidateFormationCache,
+} from "@/lib/cache";
 
 // GET /api/formations - Liste des formations
 export async function GET(request: NextRequest) {
@@ -15,6 +25,10 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const status = searchParams.get("status");
     const search = searchParams.get("search");
+
+    // Pagination
+    const { page, limit } = parsePaginationParams(searchParams);
+    const { skip, take } = getPaginationParams(page, limit);
 
     const where: any = {
       tenantId: session.user.tenantId,
@@ -36,35 +50,59 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const formations = await prisma.formation.findMany({
-      where,
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        instructor: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        _count: {
-          select: {
-            registrations: true,
-          },
-        },
-      },
-      orderBy: {
-        startDate: "asc",
-      },
-    });
+    // Essayer de récupérer du cache
+    const cacheKey = { category, status, search, page, limit };
+    const cached = await getCachedFormationList(
+      session.user.tenantId,
+      cacheKey
+    );
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
-    return NextResponse.json({ formations });
+    // Si pas en cache, récupérer de la DB
+    const [formations, total] = await Promise.all([
+      prisma.formation.findMany({
+        where,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          instructor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          _count: {
+            select: {
+              registrations: true,
+            },
+          },
+        },
+        orderBy: {
+          startDate: "asc",
+        },
+        skip,
+        take,
+      }),
+      prisma.formation.count({ where }),
+    ]);
+
+    const response = {
+      formations,
+      pagination: createPaginationMeta(page, limit, total),
+    };
+
+    // Mettre en cache
+    await cacheFormationList(session.user.tenantId, cacheKey, response);
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur GET /api/formations:", error);
     return NextResponse.json(
@@ -176,6 +214,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Invalider le cache formations
+    await invalidateFormationCache(session.user.tenantId);
 
     return NextResponse.json({ formation }, { status: 201 });
   } catch (error) {

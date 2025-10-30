@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -12,9 +13,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { EventForm } from "@/components/agenda/EventForm";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import type { AgendaEventType, AgendaEventStatus } from "@prisma/client";
+
+// Lazy load du formulaire événement
+const EventForm = dynamic(
+  () =>
+    import("@/components/agenda/EventForm").then((mod) => ({
+      default: mod.EventForm,
+    })),
+  {
+    loading: () => <Skeleton className="h-[700px] w-full" />,
+    ssr: false,
+  }
+);
 
 interface EventData {
   id: string;

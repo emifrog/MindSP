@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
 import { createFMPASchema } from "@/lib/validations/fmpa";
+import {
+  parsePaginationParams,
+  getPaginationParams,
+  createPaginationMeta,
+} from "@/lib/pagination";
+import {
+  getCachedFMPAList,
+  cacheFMPAList,
+  invalidateFMPACache,
+} from "@/lib/cache";
 
 // GET /api/fmpa - Liste des FMPA
 export async function GET(request: NextRequest) {
@@ -15,8 +25,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const type = searchParams.get("type");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+
+    // Pagination avec helper
+    const { page, limit } = parsePaginationParams(searchParams);
+    const { skip, take } = getPaginationParams(page, limit);
 
     const where: any = {
       tenantId: session.user.tenantId,
@@ -30,6 +42,14 @@ export async function GET(request: NextRequest) {
       where.type = type;
     }
 
+    // Essayer de récupérer du cache
+    const cacheKey = { status, type, page, limit };
+    const cached = await getCachedFMPAList(session.user.tenantId, cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // Si pas en cache, récupérer de la DB
     const [fmpas, total] = await Promise.all([
       prisma.fMPA.findMany({
         where,
@@ -51,21 +71,21 @@ export async function GET(request: NextRequest) {
         orderBy: {
           startDate: "asc",
         },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
       }),
       prisma.fMPA.count({ where }),
     ]);
 
-    return NextResponse.json({
+    const response = {
       fmpas,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
+      pagination: createPaginationMeta(page, limit, total),
+    };
+
+    // Mettre en cache
+    await cacheFMPAList(session.user.tenantId, cacheKey, response);
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur GET /api/fmpa:", error);
     return NextResponse.json(
@@ -111,6 +131,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Invalider le cache FMPA
+    await invalidateFMPACache(session.user.tenantId);
 
     return NextResponse.json(fmpa, { status: 201 });
   } catch (error: any) {

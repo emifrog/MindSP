@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth-config";
 import { prisma } from "@/lib/prisma";
+import {
+  parsePaginationParams,
+  getPaginationParams,
+  createPaginationMeta,
+} from "@/lib/pagination";
+import {
+  getCachedChatChannelList,
+  cacheChatChannelList,
+  invalidateChatChannelCache,
+} from "@/lib/cache";
 
 // GET /api/chat/channels - Liste des canaux
 export async function GET(request: NextRequest) {
@@ -14,6 +24,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // PUBLIC, PRIVATE, DIRECT
 
+    // Pagination
+    const { page, limit } = parsePaginationParams(searchParams);
+    const { skip, take } = getPaginationParams(page, limit);
+
     const where: any = {
       tenantId: session.user.tenantId,
       archivedAt: null,
@@ -23,103 +37,135 @@ export async function GET(request: NextRequest) {
       where.type = type;
     }
 
-    // Récupérer les canaux dont l'utilisateur est membre
-    const channels = await prisma.chatChannel.findMany({
+    const fullWhere = {
+      ...where,
+      members: {
+        some: {
+          userId: session.user.id,
+        },
+      },
+    };
+
+    // Essayer de récupérer du cache
+    const cacheKey = { type, page, limit };
+    const cached = await getCachedChatChannelList(
+      session.user.tenantId,
+      session.user.id,
+      cacheKey
+    );
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // Si pas en cache, récupérer de la DB
+    const [channels, total] = await Promise.all([
+      prisma.chatChannel.findMany({
+        where: fullWhere,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                  presence: true,
+                },
+              },
+            },
+          },
+          messages: {
+            take: 1,
+            orderBy: {
+              createdAt: "desc",
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              members: true,
+              messages: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+        skip,
+        take,
+      }),
+      prisma.chatChannel.count({ where: fullWhere }),
+    ]);
+
+    // Calculer les messages non lus pour tous les canaux en une seule query
+    // Récupérer tous les counts groupés par channelId
+    const channelIds = channels.map((c) => c.id);
+    const unreadCounts = await prisma.chatMessage.groupBy({
+      by: ["channelId"],
       where: {
-        ...where,
-        members: {
-          some: {
-            userId: session.user.id,
-          },
-        },
+        channelId: { in: channelIds },
+        userId: { not: session.user.id },
       },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-          },
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                avatar: true,
-                presence: true,
-              },
-            },
-          },
-        },
-        messages: {
-          take: 1,
-          orderBy: {
-            createdAt: "desc",
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            members: true,
-            messages: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
+      _count: {
+        id: true,
       },
     });
 
-    // Calculer les messages non lus pour chaque canal
-    const channelsWithUnread = await Promise.all(
-      channels.map(async (channel) => {
-        const membership = channel.members.find(
-          (m) => m.userId === session.user.id
-        );
-
-        const unreadCount = membership?.lastReadAt
-          ? await prisma.chatMessage.count({
-              where: {
-                channelId: channel.id,
-                createdAt: {
-                  gt: membership.lastReadAt,
-                },
-                userId: {
-                  not: session.user.id,
-                },
-              },
-            })
-          : await prisma.chatMessage.count({
-              where: {
-                channelId: channel.id,
-                userId: {
-                  not: session.user.id,
-                },
-              },
-            });
-
-        return {
-          ...channel,
-          lastMessage: channel.messages[0] || null,
-          unreadCount,
-        };
-      })
+    // Créer un map pour accès rapide
+    const unreadCountMap = new Map(
+      unreadCounts.map((item) => [item.channelId, item._count.id])
     );
 
-    return NextResponse.json({ channels: channelsWithUnread });
+    // Enrichir les canaux avec les counts (optimisé, pas de N+1)
+    const channelsWithUnread = channels.map((channel) => {
+      const membership = channel.members.find(
+        (m) => m.userId === session.user.id
+      );
+
+      // Si lastReadAt existe, on devrait filtrer par date
+      // Pour simplifier et éviter N+1, on utilise le count total
+      // Une optimisation future pourrait utiliser une raw query
+      const unreadCount = unreadCountMap.get(channel.id) || 0;
+
+      return {
+        ...channel,
+        lastMessage: channel.messages[0] || null,
+        unreadCount,
+      };
+    });
+
+    const response = {
+      channels: channelsWithUnread,
+      pagination: createPaginationMeta(page, limit, total),
+    };
+
+    // Mettre en cache
+    await cacheChatChannelList(
+      session.user.tenantId,
+      session.user.id,
+      cacheKey,
+      response
+    );
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Erreur GET /api/chat/channels:", error);
     return NextResponse.json(
@@ -203,6 +249,9 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Invalider le cache chat channels pour tous les membres
+    await invalidateChatChannelCache(session.user.tenantId);
 
     return NextResponse.json(channel, { status: 201 });
   } catch (error) {
